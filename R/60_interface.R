@@ -1,15 +1,15 @@
 
 #' Bayesian model
 #'
-#' @param formula Formula to estimate.
+#' @param x Formula or \code{bm} object to sample with.
 #' @param data A \code{\link{data.frame}} containing the variables in the model.
 #' @param n_save,n_burn Integer scalar. Number of draws for the burn-in period and to store for inference.
 #' @param type Character scalar with the type of prior setup.
-#' @param priors Settings for the prior setup. See \code{\link{set_options}}.
+#' @param options Settings for the prior setup. See \code{\link{set_options}}.
 #' @param mh Settings to tune the Metropolis-Hastings step. See \code{\link{set_mh}}.
 #' @param verbose Logical scalar. Whether to print status updates.
 #' @param W Numeric matrix (or function to construct one) with the spatial connectivities.
-#' @param SLX Numeric matrix with explanatory variables that should be lagged spatially.
+#' @param X_SLX Numeric matrix with explanatory variables that should be lagged spatially.
 #' @param type Character scalar used to specify the desired model.
 #' @param ... Not used.
 #'
@@ -23,12 +23,13 @@
 #' y <- X %*% beta + rnorm(N)
 #'
 #' bm(y ~ X, n_burn = 100, n_draw = 100)
-bm <- function(x, ...) {UseMethod("blm", x)}
+bm <- function(x, ...) {UseMethod("bm", x)}
 
 
 #' @export
+#' @importFrom stats model.frame model.response model.matrix
 #' @rdname bm
-bm <- function(x, data = NULL,
+bm.formula <- function(x, data = NULL,
   n_save = 1000L, n_burn = 500L,
   options = set_options(), mh = set_mh(), verbose = TRUE,
   W, X_SLX,
@@ -61,7 +62,7 @@ bm <- function(x, data = NULL,
 
 #' @export
 #' @rdname bm
-bm.bm <- function(x, n_save = 1000L, n_burn = 0L, verbose = TRUE) {
+bm.bm <- function(x, n_save = 1000L, n_burn = 0L, verbose = TRUE, ...) {
 
   draws <- rbind(x$draws, sample(x$model, n_save = n_save, n_burn = n_burn, verbose = verbose))
 

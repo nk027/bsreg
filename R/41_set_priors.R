@@ -43,7 +43,7 @@ set_options <- function(
 #' @param lambda_a,lambda_b Numeric scalars with the prior shape and rate of 'lambda'.
 #' @param theta_scale Numeric scalar with the proposal scale of 'theta'. Defaults to zero for a fixed value.
 #' @param theta_a Numeric scalar with the prior rate of 'theta'.
-#' @param lambda,tau,theta,zeta,nu Numerics with starting values for the respective parameter.
+#' @param lambda,tau,theta,zeta,nu,beta,sigma Numerics with starting values for the respective parameter.
 #'
 #' @return Returns a list with priors and settings.
 #' @export

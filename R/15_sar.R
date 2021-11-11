@@ -56,7 +56,7 @@ get_sar_class <- function(parent = NormalGamma) {
       private$SAR$W <- private$SAR$Psi <- Psi_SAR
       # # Set cache
       private$SAR$Wy <- private$SAR$W %*% super$y
-      private$SAR$XWy <- crossprod(X, private$SAR$Wy)
+      private$SAR$XWy <- crossprod(self$X, private$SAR$Wy)
       # Set lambda and obtain the latent
       private$SAR$set_lambda(private$SAR$priors$lambda)
 

@@ -12,12 +12,13 @@ print.bm <- function(x, ...) {
 
 
 #' @export
-summary.bm <- function(x, ...) {
-  summary(x$draws)
+summary.bm <- function(object, ...) {
+  summary(object$draws)
 }
 
 
 #' @export
+#' @importFrom stats plot.ts
 plot.bm <- function(x, ...) {
   plot.ts(x$draws)
 }

@@ -1,0 +1,18 @@
+Package: bsreg
+Type: Package
+Title: Bayesian spatial regression models
+Version: 0.0.0.9000
+Date: 2021-11-20
+Authors@R:
+    person(given = "Nikolas", family = "Kuschnig", role = c("aut", "cre"), email = "nikolas.kuschnig@wu.ac.at", comment = c(ORCID = "0000-0002-6642-2543"))
+Author: Nikolas Kuschnig [aut, cre] (<https://orcid.org/0000-0002-6642-2543>)
+Maintainer: Nikolas Kuschnig <nikolas.kuschnig@wu.ac.at>
+Description: Estimate stuff.
+Depends: R (>= 4.1.0)
+Imports: R6, stats, graphics, utils, grDevices
+Suggests: stochvol
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2

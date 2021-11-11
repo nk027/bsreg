@@ -1,4 +1,6 @@
 
+devtools::load_all()
+
 # Setup ---
 
 set.seed(42)
@@ -7,9 +9,9 @@ set.seed(42)
 N <- 500
 beta <- c(2, -1)
 M <- length(beta)
-theta <- c(1)
+theta <- beta[-1] * .5
 sigma <- .5
-lambda <- .4
+lambda <- .5
 # Connectivity
 xy <- cbind(runif(N), runif(N))
 dist <- as.matrix(dist(xy))
@@ -24,6 +26,7 @@ D <- diag(N) - -lambda * W
 # Data
 X <- cbind(1, matrix(rnorm(N * (M - 1)), N, M - 1))
 X_SLX <- X[, -1]
+# Regressors depend
 y_lm <- X %*% beta + rnorm(N, 0, sigma)
 y_slx <- X %*% beta + W %*% X_SLX %*% theta + rnorm(N, 0, sigma)
 y_sar <- solve(S, X %*% beta + rnorm(N, 0, sigma))
@@ -31,6 +34,37 @@ y_sem <- X %*% beta + solve(D, rnorm(N, 0, sigma))
 y_sdm <- solve(S, X %*% beta + W %*% X_SLX %*% theta + rnorm(N, 0, sigma))
 y_sdem <- X %*% beta + W %*% X_SLX %*% theta + solve(D, rnorm(N, 0, sigma))
 y_sac <- solve(S, X %*% beta + solve(D, rnorm(N, 0, sigma)))
+
+# Estimate rows
+
+outcomes <- list(y_lm, y_slx, y_sar, y_sem)
+models <- list("lm" = list(), "lx" = list(), "ar" = list(), "em" = list())
+
+for(i in seq_along(outcomes)) {
+  models[[i]] <- list(
+    "lm" = blm(outcomes[[i]] ~ X, n_save = 10000, n_burn = 1000)$draws,
+    "lx" = bslx(outcomes[[i]] ~ X, W = W, n_save = 10000, n_burn = 1000)$draws,
+    "ar" = bsar(outcomes[[i]] ~ X, W = W, n_save = 10000, n_burn = 1000)$draws,
+    "em" = bsem(outcomes[[i]] ~ X, W = W, n_save = 10000, n_burn = 1000)$draws
+  )
+}
+df <- lapply(models, function(x) {
+  as_tibble(cbind("lm" = x[[1]][, "beta2"], "lx" = x[[2]][, "beta2"] + x[[2]][, "beta3"],
+    "ar" = x[[3]][, "beta2"] / (1 - x[[3]][, "lambda_SAR"]), "em" = x[[4]][, "beta2"]))
+})
+df <- data.table::rbindlist(df)
+df$type <- rep(names(models), each = NROW(models[[1]][[1]]))
+df <- tidyr::pivot_longer(df, cols = 1:4)
+
+true <- tibble(type = c("lm", "lx", "ar", "em"),
+  value = c(beta[2], beta[2] + theta[1], beta[2] / (1 - lambda), beta[2]))
+
+
+ggplot(df) +
+  facet_grid(type ~ ., scales = "free_y") +
+  stat_histinterval(aes(x = name, y = value)) +
+  geom_hline(data = true, aes(yintercept = value), linetype = "dashed") +
+  theme_minimal()
 
 # Estimate ---
 
@@ -42,7 +76,6 @@ c(beta, sigma^2)
 summary(out_lm)
 plot(out_lm)
 
-lm(y_slx ~ X + W %*% X_SLX - 1)
 out_lx <- bslx(y ~ X, W = W, n_save = 10000, n_burn = 1000)
 print(out_lx)
 c(beta, theta, sigma^2)
@@ -61,17 +94,17 @@ c(beta, sigma^2, lambda)
 summary(out_em)
 plot(out_em)
 
-out_dm <- bsdm(y ~ X, W = W, n_save = 10000, n_burn = 1000)
-print(out_dm)
-c(beta, theta, sigma^2, lambda)
-summary(out_dm)
-plot(out_dm)
+# out_dm <- bsdm(y ~ X, W = W, n_save = 10000, n_burn = 1000)
+# print(out_dm)
+# c(beta, theta, sigma^2, lambda)
+# summary(out_dm)
+# plot(out_dm)
 
-out_de <- bsdem(y ~ X, W = W, n_save = 10000, n_burn = 1000)
-print(out_de)
-c(beta, theta, sigma^2, lambda)
-summary(out_de)
-plot(out_de)
+# out_de <- bsdem(y ~ X, W = W, n_save = 10000, n_burn = 1000)
+# print(out_de)
+# c(beta, theta, sigma^2, lambda)
+# summary(out_de)
+# plot(out_de)
 
 
 library("dplyr")
@@ -98,7 +131,8 @@ total <- d_ar$beta2[seq(1, 10000, 2)] / (1 - d_ar$lambda_SAR[seq(1, 10000, 2)])
 d_ar$direct <- rep(direct, 2)
 d_ar$indirect <- rep(total, 2) - d_ar$direct
 
-d_ar <- d_ar %>% transmute(type = "SAR", total = direct + indirect, direct, indirect, sigma)
+d_ar <- d_ar %>% transmute(type = "SAR",
+  total = rep(total, 2), direct, indirect, sigma)
 d_lm <- out_lm$draws %>% as_tibble() %>%
   transmute(type = "LM", total = beta2, direct = beta2, indirect = NA, sigma)
 d_lx <- out_lx$draws %>% as_tibble() %>%

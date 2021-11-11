@@ -64,8 +64,8 @@ get_slx_class <- function(parent = NormalGamma) {
         # Set cache manually
         private$SLX$WX <- private$SLX$W %*% private$SLX$X_SLX
         private$SLX$X <- cbind(super$X, private$SLX$WX)
-        private$SLX$XX <- crossprod(self$X)
-        private$SLX$Xy <- crossprod(self$X, self$y)
+        private$SLX$XX <- crossprod(private$SLX$X)
+        private$SLX$Xy <- crossprod(private$SLX$X, self$y)
       } else {
         private$SLX$Psi_fixed <- FALSE
         private$SLX$Psi <- Psi_SLX
@@ -107,7 +107,7 @@ get_slx_class <- function(parent = NormalGamma) {
     # Variables that are updated using the connectivity ---
     X = function() {private$SLX$X},
     XX = function() {private$SLX$XX},
-    Xy = function() {private$SLX$Xy},
+    Xy = function() {crossprod(private$SLX$X, self$y)},
 
     # Acessor functions ---
     get_parameters = function() {

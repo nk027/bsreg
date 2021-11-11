@@ -27,7 +27,6 @@ get_sar_class <- function(parent = NormalGamma) {
       # Function to update the latent, i.e. z(lambda) = y - lambda W y, with new parameters
       private$SAR$set_latent <- function(lambda = private$SAR$lambda, Wy = self$Wy) {
         private$SAR$z <- super$y - lambda * Wy
-        private$SAR$Xz <- crossprod(self$X, self$y)
       }
 
       # Function to set a new lambda and update the latent
@@ -56,7 +55,6 @@ get_sar_class <- function(parent = NormalGamma) {
       private$SAR$W <- private$SAR$Psi <- Psi_SAR
       # # Set cache
       private$SAR$Wy <- private$SAR$W %*% super$y
-      private$SAR$XWy <- crossprod(self$X, private$SAR$Wy)
       # Set lambda and obtain the latent
       private$SAR$set_lambda(private$SAR$priors$lambda)
 
@@ -132,9 +130,9 @@ get_sar_class <- function(parent = NormalGamma) {
 
     # Variables that are adapted using the latent ---
     y = function() {private$SAR$z},
-    Xy = function() {private$SAR$Xz},
+    Xy = function() {crossprod(self$X, private$SAR$z)},
     Wy = function() {private$SAR$Wy},
-    XWy = function() {private$SAR$XWy},
+    XWy = function() {crossprod(self$X, private$SAR$Wy)},
 
     # Access functions ---
     get_parameters = function() {

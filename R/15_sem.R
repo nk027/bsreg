@@ -125,7 +125,7 @@ get_sem_class <- function(parent = NormalGamma) {
       self$MH$SEM_lambda$acceptance(get_rss = get_rss, get_ldet = get_ldet)
       self$MH$SEM_lambda$finalize()
       lambda <- self$MH$SEM_lambda$get_value # Assign and recompute
-      if(abs(lambda - private$SEM$lambda) > 1e-12) {private$SEM$set_lambda(lambda)}
+      private$SEM$set_lambda(lambda) # Do it always to accommodate changing X
     }
 
   ),

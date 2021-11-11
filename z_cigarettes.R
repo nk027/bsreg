@@ -64,7 +64,7 @@ print(out_sem)
 spatialreg::errorsarlm(y ~ X - 1, listw = spdep::mat2listw(W))
 
 out_sdm <- bsdm(y ~ X, W = W, X_SLX = X[, 2:3], n_save = 10000,
-  ldet_SEM = list(grid = FALSE, reps = n_time))
+  ldet_SAR = list(grid = FALSE, reps = n_time))
 print(out_sdm)
 spatialreg::lagsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W))
 

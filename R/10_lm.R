@@ -190,7 +190,7 @@ NormalGamma <- R6Class("NormalGamma", inherit = Base,
 
     # Access functions ---
     residuals = function() {self$y - self$X %*% self$beta},
-    get_parameters = function() {list("beta" = self$beta, "sigma" = self$sigma)},
+    get_parameters = function() {list("beta" = self$beta, "sigma" = sqrt(self$sigma))},
     get_NG = function() {private$NG}
   ),
 

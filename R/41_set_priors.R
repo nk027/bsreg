@@ -160,7 +160,12 @@ set_SEM <- set_SAR
 #' @importFrom stochvol specify_priors
 #' @export
 set_SV <- function(
-  priors = stochvol::specify_priors(), mu = 0, phi = 0.5, sigma = 1, nu = Inf, rho = 0, beta = 0, latent0 = 0) {
+  priors, mu = 0, phi = 0.5, sigma = 1, nu = Inf, rho = 0, beta = 0, latent0 = 0) {
+
+  if(missing(priors)) {
+    has_package("stochvol")
+    priors <- stochvol::specify_priors()
+  }
 
   structure(list(
     priors = priors, parameters = list(

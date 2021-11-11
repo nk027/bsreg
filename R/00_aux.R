@@ -117,3 +117,18 @@ i_seq <- function(x) {
 sq_sum <- function(...) {
   sum((...)^2)
 }
+
+
+#' Check whether a package is installed
+#'
+#' @param package Character scalar.
+#'
+#' @noRd
+has_package <- function(package) {
+
+  if(!requireNamespace(package, quietly = TRUE)) {
+    stop("Package \'", package, "\' required for this method.", call. = FALSE)
+  }
+
+  return(NULL)
+}

@@ -41,49 +41,134 @@ Psi <- function(x) {
 
 # Reproduce -----
 
+n_save <- 1000L
+n_burn <- 500L
+
 # Row-stochastic binary contiguity ---
 
 X_LX <- cbind(X, W %*% X[, 2:3]) # Easier for lm and spatialreg
 
-out_lm <- blm(y ~ X - 1, n_save = 10000)
-print(out_lm)
-print(lm(y ~ X - 1))
+(out_blm <- blm(y ~ X - 1, n_save = n_save, n_burn = n_burn))
+(out_lm <- lm(y ~ X - 1))
 
-out_slx <- bslx(y ~ X - 1, W = W, X_SLX = X[, 2:3], n_save = 10000)
-print(out_slx)
-print(lm(y ~ X_LX - 1))
+(out_bslx <- bslx(y ~ X - 1, W = W, X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn))
+(out_slx <- lm(y ~ X_LX - 1))
 
-out_sar <- bsar(y ~ X - 1, W = W, n_save = 10000,
-  ldet_SAR = list(grid = FALSE, reps = n_time))
-print(out_sar)
-spatialreg::lagsarlm(y ~ X - 1, listw = spdep::mat2listw(W))
+(out_bsar <- bsar(y ~ X - 1, W = W, n_save = n_save, n_burn = n_burn,
+  ldet_SAR = list(reps = n_time)))
+(out_sar <- spatialreg::lagsarlm(y ~ X - 1, listw = spdep::mat2listw(W)))
 
-out_sem <- bsem(y ~ X, W = W, n_save = 10000,
-  ldet_SEM = list(grid = FALSE, reps = n_time))
-print(out_sem)
-spatialreg::errorsarlm(y ~ X - 1, listw = spdep::mat2listw(W))
+(out_bsem <- bsem(y ~ X, W = W, n_save = n_save, n_burn = n_burn,
+  ldet_SEM = list(reps = n_time)))
+(out_sem <- spatialreg::errorsarlm(y ~ X - 1, listw = spdep::mat2listw(W)))
 
-out_sdm <- bsdm(y ~ X, W = W, X_SLX = X[, 2:3], n_save = 10000,
-  ldet_SAR = list(grid = FALSE, reps = n_time))
-print(out_sdm)
-spatialreg::lagsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W))
+(out_bsdm <- bsdm(y ~ X, W = W, X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn, ldet_SAR = list(reps = n_time)))
+(out_sdm <- spatialreg::lagsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W)))
 
-out_sdem <- bsdem(y ~ X, W = W, X_SLX = X[, 2:3], n_save = 10000,
-  ldet_SEM = list(grid = FALSE, reps = n_time))
-print(out_sdem)
-spatialreg::errorsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W))
+(out_bsdem <- bsdem(y ~ X, W = W, X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn, ldet_SEM = list(reps = n_time)))
+(out_sdem <- spatialreg::errorsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W)))
+
+# Plot total effects
+library("dplyr")
+library("ggplot2")
+library("ggdist")
+d1 <- rbind(
+  as_tibble(out_blm$draws) %>% transmute(model = "LM",
+    price = beta2, income = beta3),
+  as_tibble(out_bslx$draws) %>% transmute(model = "SLX",
+    price = beta2 + beta78, income = beta3 + beta79),
+  as_tibble(out_bsar$draws) %>% transmute(model = "SAR",
+    price = beta2 / (1 - lambda_SAR), income = beta3 / (1 - lambda_SAR)),
+  as_tibble(out_bsem$draws) %>% transmute(model = "SEM",
+    price = beta2, income = beta3),
+  as_tibble(out_bsdm$draws) %>% transmute(model = "SDM",
+    price = (beta2 + beta78) / (1 - lambda_SAR),
+    income = (beta3 + beta79) / (1 - lambda_SAR)),
+  as_tibble(out_bsdem$draws) %>% transmute(model = "SDEM",
+    price = beta2 + beta78, income = beta3 + beta79)
+) %>% tidyr::pivot_longer(cols = 2:3)
+d2 <- rbind(
+  tibble(model = "LM", price = coef(out_lm)[2], income = coef(out_lm)[3]),
+  tibble(model = "SLX",
+    price = sum(coef(out_slx)[c(2, 78)]), income = sum(coef(out_slx)[c(3, 79)])),
+  tibble(model = "SAR", price = coef(out_sar)[3] / (1 - coef(out_sar)[1]),
+    income = coef(out_sar)[4] / (1 - coef(out_sar)[1])),
+  tibble(model = "SEM", price = coef(out_sem)[3], income = coef(out_sem)[4]),
+  tibble(model = "SDM",
+    price = sum(coef(out_sdm)[c(3, 79)]) / (1 - coef(out_sdm)[1]),
+    income = sum(coef(out_sdm)[c(4, 80)]) / (1 - coef(out_sdm)[1])),
+  tibble(model = "SDEM",
+    price = sum(coef(out_sdem)[c(3, 79)]), income = sum(coef(out_sdem)[c(4, 80)]))
+) %>% tidyr::pivot_longer(cols = 2:3)
+
+d1 <- d1 %>% mutate(model = factor(model,
+  levels = c("LM", "SEM", "SDEM", "SLX", "SDM", "SAR")))
+
+d1 %>% filter(model != "SDM") %>% group_by(name) %>%
+  summarise(min = min(value), max = max(value))
+
+p1 <- d1 %>% filter(name == "price") %>% ggplot() +
+  stat_dots(aes(x = model, y = value, fill = model, col = model), quantiles = 250,
+    width = .75, justification = -0.2) +
+  ggplot2::geom_boxplot(aes(x = model, y = value, fill = model), col = "#444444",
+    alpha = 0.75, width = .2, size = .8, outlier.color = NA) +
+  geom_point(data = d2,
+    aes(x = model, y = value), shape = 4, stroke = 1.5, size = 3) +
+  ggthemes::theme_stata(base_size = 14) +
+  theme(
+    plot.title = element_text(color = "#333333", size = 18, face = "bold"),
+    axis.title.x = element_text(color = "#333333", size = 14, face = "bold"),
+    axis.title.y = element_text(color = "#333333", size = 14, face = "bold"),
+    legend.position = "none"
+  ) +
+  coord_cartesian(ylim = c(-2.2, 0)) +
+  ggtitle("Total effect of price and income by model") +
+  scale_colour_manual(values = ggthemes::colorblind_pal()(7)[-1]) +
+  scale_fill_manual(values = ggthemes::colorblind_pal()(7)[-1])
+
+p2 <- d1 %>% filter(name == "income") %>% ggplot() +
+  stat_dots(aes(x = model, y = value, fill = model, col = model), quantiles = 250,
+    width = .75, justification = -0.2) +
+  ggplot2::geom_boxplot(aes(x = model, y = value, fill = model), col = "#444444",
+    alpha = 0.75, width = .2, size = .8, outlier.color = NA) +
+  geom_point(data = d2,
+    aes(x = model, y = value), shape = 4, stroke = 1.5, size = 3) +
+  ggthemes::theme_stata(base_size = 14) +
+  theme(
+    plot.title = element_text(color = "#333333", size = 18, face = "bold"),
+    axis.title.x = element_text(color = "#333333", size = 14, face = "bold"),
+    axis.title.y = element_text(color = "#333333", size = 14, face = "bold"),
+    legend.position = "none"
+  ) +
+  coord_cartesian(ylim = c(-.2, 1.8)) +
+  ggtitle("Total effect of price and income by model") +
+  scale_colour_manual(values = ggthemes::colorblind_pal()(7)[-1]) +
+  scale_fill_manual(values = ggthemes::colorblind_pal()(7)[-1])
+
+gridExtra::grid.arrange(p1, p2, nrow = 2, ncol = 1)
+
+# Table of coefficients
 
 
 # Inverse-distance decay ---
 
-out_slxd2 <- bslx(y ~ X, W = Psi(2), X_SLX = X[, 2:3], n_save = 10000)
+out_slxd2 <- bslx(y ~ X, W = Psi(2), X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn)
 print(out_slxd2)
 
-out_slxd3 <- bslx(y ~ X, W = Psi(3), X_SLX = X[, 2:3], n_save = 10000)
+out_slxd3 <- bslx(y ~ X, W = Psi(3), X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn)
 print(out_slxd3)
-summary(lm(y ~ cbind(X, W %*% X[, 2:3])))
 
-out_slxdx <- bslx(y ~ X, W = Psi, X_SLX = X[, 2:3], n_save = 10000, n_burn = 5000,
+out_slxd4 <- bslx(y ~ X, W = Psi(4), X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn)
+print(out_slxd4)
+
+out_slxdx <- bslx(y ~ X, W = Psi, X_SLX = X[, 2:3],
+  n_save = n_save, n_burn = n_burn,
   options = set_options(SLX = set_SLX(delta = 3, delta_scale = 0.05)))
 print(out_slxdx)
 

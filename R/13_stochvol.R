@@ -6,6 +6,7 @@
 #' @param parent \code{\link{R6Class}} object to inherit from.
 #'
 #' @importFrom R6 R6Class
+#' @importFrom stochvol svsample_fast_cpp
 #'
 #' @noRd
 get_sv_class <- function(parent = NormalGamma) {

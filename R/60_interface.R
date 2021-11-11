@@ -74,22 +74,22 @@ bm.bm <- function(x, n_save = 1000L, n_burn = 0L, verbose = TRUE, ...) {
 
 #' @export
 #' @rdname bm
-blm <- function(...) {bm.formula(..., type = "lm")}
+blm <- function(...) {bm(..., type = "lm")}
 #' @export
 #' @rdname bm
-bslx <- function(...) {bm.formula(..., type = "slx")}
+bslx <- function(...) {bm(..., type = "slx")}
 #' @export
 #' @rdname bm
-bsar <- function(...) {bm.formula(..., type = "sar")}
+bsar <- function(...) {bm(..., type = "sar")}
 #' @export
 #' @rdname bm
-bsem <- function(...) {bm.formula(..., type = "sem")}
+bsem <- function(...) {bm(..., type = "sem")}
 #' @export
 #' @rdname bm
-bsdm <- function(...) {bm.formula(..., type = "sdm")}
+bsdm <- function(...) {bm(..., type = "sdm")}
 #' @export
 #' @rdname bm
-bsdem <- function(...) {bm.formula(..., type = "sdem")}
+bsdem <- function(...) {bm(..., type = "sdem")}
 #' @export
 #' @rdname bm
-bsv <- function(...) {bm.formula(..., type = "sv")}
+bsv <- function(...) {bm(..., type = "sv")}

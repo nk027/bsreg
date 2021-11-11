@@ -120,7 +120,7 @@ NormalGamma <- R6Class("NormalGamma", inherit = Base,
       cat("The sampler contains", length(self$MH), "Metropolis-Hastings steps.\n")
       for(i in seq_along(self$MH)) {
         cat("\t", names(self$MH)[i], " at ", self$MH[[i]]$get_accepted, " accepted draws out of ",
-          self$MH[[i]]$get_proposed, " proposals (rate ", round(self$MH[[i]]$get_acceptance, 2), "%).\n", sep = "")
+          self$MH[[i]]$get_proposed, " proposals (rate ", round(self$MH[[i]]$get_acceptance, 2), ").\n", sep = "")
       }
 
       return(invisible(self))

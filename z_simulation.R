@@ -1,12 +1,16 @@
 
 devtools::load_all()
+library("dplyr")
+library("ggplot2")
+library("ggdist")
+
 
 # Setup ---
 
 set.seed(42)
 
 # Parameters
-N <- 500
+N <- 1000
 beta <- c(2, -1)
 M <- length(beta)
 theta <- beta[-1] * .5
@@ -35,7 +39,10 @@ y_sdm <- solve(S, X %*% beta + W %*% X_SLX %*% theta + rnorm(N, 0, sigma))
 y_sdem <- X %*% beta + W %*% X_SLX %*% theta + solve(D, rnorm(N, 0, sigma))
 y_sac <- solve(S, X %*% beta + solve(D, rnorm(N, 0, sigma)))
 
-# Estimate rows
+# Estimate rows ---
+
+n_save <- 10000L
+n_burn <- 1000L
 
 outcomes <- list(y_lm, y_slx, y_sar, y_sem)
 models <- list("lm" = list(), "lx" = list(), "ar" = list(), "em" = list())
@@ -59,12 +66,23 @@ df <- tidyr::pivot_longer(df, cols = 1:4)
 true <- tibble(type = c("lm", "lx", "ar", "em"),
   value = c(beta[2], beta[2] + theta[1], beta[2] / (1 - lambda), beta[2]))
 
-
+# Plot direct effects ---
 ggplot(df) +
   facet_grid(type ~ ., scales = "free_y") +
-  stat_histinterval(aes(x = name, y = value)) +
+  stat_histinterval(aes(x = name, y = value, fill = type), width = .8, justification = -.1) +
+  geom_boxplot(aes(x = name, y = value, col = type), width = .1, outlier.color = NA) +
   geom_hline(data = true, aes(yintercept = value), linetype = "dashed") +
-  theme_minimal()
+  tidyquant::theme_tq() +
+  tidyquant::scale_fill_tq() + tidyquant::scale_colour_tq()
+
+# Table of coefficients ---
+out <- lapply(models, lapply, function(x) round(colMeans(x), 3))
+out <- lapply(out, function(x) as.list(unlist(x)))
+out <- data.table::rbindlist(out)
+rownames(out) <- c("LM", "SLX", "SAR", "SEM")
+colnames(out) <- gsub(".*[.](.*)", "\\1", colnames(out))
+out
+
 
 # Estimate ---
 
@@ -106,10 +124,13 @@ plot(out_em)
 # summary(out_de)
 # plot(out_de)
 
-
-library("dplyr")
-library("ggplot2")
-library("ggdist")
+out_lx <- bslx(y ~ X, W = Psi,
+  options = set_options(SLX = set_SLX(delta = 2, delta_scale = .2)),
+  n_save = 10000, n_burn = 1000)
+print(out_lx)
+c(beta, theta, sigma^2)
+summary(out_lx)
+plot(out_lx)
 
 # SAR is a hassle
 # eff_dir[i, ] <- sum(diag(B)) / N * betas[i, index %in% c("alpha", "beta")] +

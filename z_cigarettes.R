@@ -34,15 +34,15 @@ dist <- as.matrix(dist(xy_data_fixed))
 diag(dist) <- Inf
 Psi <- function(x) {
   W <- 1 / dist ^ x
-  W <- W / max(Re(eigen(W[1:46, 1:46])$values))
+  W <- W / max(eigen(W[1:46, 1:46], symmetric = TRUE)$values)
   kronecker(diag(n_time), W)
 }
 # W <- Psi(3)
 
 # Reproduce -----
 
-n_save <- 1000L
-n_burn <- 500L
+n_save <- 25000L
+n_burn <- 5000L
 
 # Row-stochastic binary contiguity ---
 
@@ -71,10 +71,13 @@ X_LX <- cbind(X, W %*% X[, 2:3]) # Easier for lm and spatialreg
   n_save = n_save, n_burn = n_burn, ldet_SEM = list(reps = n_time)))
 (out_sdem <- spatialreg::errorsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W)))
 
+save.image("cigarettes.Rda")
+
 # Plot total effects
 library("dplyr")
 library("ggplot2")
 library("ggdist")
+
 d1 <- rbind(
   as_tibble(out_blm$draws) %>% transmute(model = "LM",
     price = beta2, income = beta3),
@@ -108,12 +111,13 @@ d1 <- d1 %>% mutate(model = factor(model,
   levels = c("LM", "SEM", "SDEM", "SLX", "SDM", "SAR")))
 
 d1 %>% filter(model != "SDM") %>% group_by(name) %>%
-  summarise(min = min(value), max = max(value))
+  summarise(min = min(value), max = max(value),
+    q9 = quantile(value, .999), q1 = quantile(value, .001))
 
 p1 <- d1 %>% filter(name == "price") %>% ggplot() +
   stat_dots(aes(x = model, y = value, fill = model, col = model), quantiles = 250,
     width = .75, justification = -0.2) +
-  ggplot2::geom_boxplot(aes(x = model, y = value, fill = model), col = "#444444",
+  geom_boxplot(aes(x = model, y = value, fill = model), col = "#444444",
     alpha = 0.75, width = .2, size = .8, outlier.color = NA) +
   geom_point(data = d2,
     aes(x = model, y = value), shape = 4, stroke = 1.5, size = 3) +
@@ -124,15 +128,15 @@ p1 <- d1 %>% filter(name == "price") %>% ggplot() +
     axis.title.y = element_text(color = "#333333", size = 14, face = "bold"),
     legend.position = "none"
   ) +
-  coord_cartesian(ylim = c(-2.2, 0)) +
-  ggtitle("Total effect of price and income by model") +
+  coord_cartesian(ylim = c(-1.7, -.7)) +
+  # ggtitle("Total effect of price and income by model") +
   scale_colour_manual(values = ggthemes::colorblind_pal()(7)[-1]) +
   scale_fill_manual(values = ggthemes::colorblind_pal()(7)[-1])
 
 p2 <- d1 %>% filter(name == "income") %>% ggplot() +
   stat_dots(aes(x = model, y = value, fill = model, col = model), quantiles = 250,
     width = .75, justification = -0.2) +
-  ggplot2::geom_boxplot(aes(x = model, y = value, fill = model), col = "#444444",
+  geom_boxplot(aes(x = model, y = value, fill = model), col = "#444444",
     alpha = 0.75, width = .2, size = .8, outlier.color = NA) +
   geom_point(data = d2,
     aes(x = model, y = value), shape = 4, stroke = 1.5, size = 3) +
@@ -143,8 +147,8 @@ p2 <- d1 %>% filter(name == "income") %>% ggplot() +
     axis.title.y = element_text(color = "#333333", size = 14, face = "bold"),
     legend.position = "none"
   ) +
-  coord_cartesian(ylim = c(-.2, 1.8)) +
-  ggtitle("Total effect of price and income by model") +
+  coord_cartesian(ylim = c(0, 1.1)) +
+  # ggtitle("Total effect of price and income by model") +
   scale_colour_manual(values = ggthemes::colorblind_pal()(7)[-1]) +
   scale_fill_manual(values = ggthemes::colorblind_pal()(7)[-1])
 
@@ -172,4 +176,4 @@ out_slxdx <- bslx(y ~ X, W = Psi, X_SLX = X[, 2:3],
   options = set_options(SLX = set_SLX(delta = 3, delta_scale = 0.05)))
 print(out_slxdx)
 
-save.image()
+save.image("cigarettes_dist.Rda")

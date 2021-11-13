@@ -10,7 +10,7 @@ library("ggdist")
 set.seed(42)
 
 # Parameters
-N <- 1000
+N <- 200
 beta <- c(2, -1)
 M <- length(beta)
 theta <- beta[-1] * .5
@@ -55,23 +55,23 @@ for(i in seq_along(outcomes)) {
     "em" = bsem(outcomes[[i]] ~ X, W = W, n_save = 10000, n_burn = 1000)$draws
   )
 }
-df <- lapply(models, function(x) {
+d1 <- lapply(models, function(x) {
   as_tibble(cbind("lm" = x[[1]][, "beta2"], "lx" = x[[2]][, "beta2"] + x[[2]][, "beta3"],
     "ar" = x[[3]][, "beta2"] / (1 - x[[3]][, "lambda_SAR"]), "em" = x[[4]][, "beta2"]))
 })
-df <- data.table::rbindlist(df)
-df$type <- rep(names(models), each = NROW(models[[1]][[1]]))
-df <- tidyr::pivot_longer(df, cols = 1:4)
+d1 <- data.table::rbindlist(d1)
+d1$type <- rep(names(models), each = NROW(models[[1]][[1]]))
+d1 <- tidyr::pivot_longer(d1, cols = 1:4)
 
-true <- tibble(type = c("lm", "lx", "ar", "em"),
+d2 <- tibble(type = c("lm", "lx", "ar", "em"),
   value = c(beta[2], beta[2] + theta[1], beta[2] / (1 - lambda), beta[2]))
 
 # Plot direct effects ---
-ggplot(df) +
+ggplot(d1) +
   facet_grid(type ~ ., scales = "free_y") +
   stat_histinterval(aes(x = name, y = value, fill = type), width = .8, justification = -.1) +
   geom_boxplot(aes(x = name, y = value, col = type), width = .1, outlier.color = NA) +
-  geom_hline(data = true, aes(yintercept = value), linetype = "dashed") +
+  geom_hline(data = d2, aes(yintercept = value), linetype = "dashed") +
   tidyquant::theme_tq() +
   tidyquant::scale_fill_tq() + tidyquant::scale_colour_tq()
 

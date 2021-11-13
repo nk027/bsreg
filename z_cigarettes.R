@@ -1,5 +1,6 @@
 
 devtools::load_all()
+library("spatialreg")
 
 df <- readxl::read_excel("~/repos/bse/data/cigarette+2var.xls")
 contig_data <- readxl::read_excel("~/repos/bse/data/Spat-Sym-US.xls", col_names = FALSE)
@@ -71,7 +72,7 @@ X_LX <- cbind(X, W %*% X[, 2:3]) # Easier for lm and spatialreg
   n_save = n_save, n_burn = n_burn, ldet_SEM = list(reps = n_time)))
 (out_sdem <- spatialreg::errorsarlm(y ~ X_LX - 1, listw = spdep::mat2listw(W)))
 
-save.image("cigarettes.Rda")
+save.image("cigarettes_contig.Rda")
 
 # Plot total effects
 library("dplyr")
@@ -129,7 +130,7 @@ p1 <- d1 %>% filter(name == "price") %>% ggplot() +
     legend.position = "none"
   ) +
   coord_cartesian(ylim = c(-1.7, -.7)) +
-  # ggtitle("Total effect of price and income by model") +
+  ggtitle("Total effect of price by model") +
   scale_colour_manual(values = ggthemes::colorblind_pal()(7)[-1]) +
   scale_fill_manual(values = ggthemes::colorblind_pal()(7)[-1])
 
@@ -148,7 +149,7 @@ p2 <- d1 %>% filter(name == "income") %>% ggplot() +
     legend.position = "none"
   ) +
   coord_cartesian(ylim = c(0, 1.1)) +
-  # ggtitle("Total effect of price and income by model") +
+  ggtitle("Total effect of income by model") +
   scale_colour_manual(values = ggthemes::colorblind_pal()(7)[-1]) +
   scale_fill_manual(values = ggthemes::colorblind_pal()(7)[-1])
 
@@ -156,6 +157,44 @@ gridExtra::grid.arrange(p1, p2, nrow = 2, ncol = 1)
 
 # Table of coefficients
 
+d1 <- rbind(
+  as_tibble(out_blm$draws) %>% transmute(model = "LM",
+    price = beta2, price_ind = NA,
+    income = beta3, income_ind = NA,
+    lambda = NA),
+  as_tibble(out_bslx$draws) %>% transmute(model = "SLX",
+    price = beta2, price_ind = beta78,
+    income = beta3, income_ind = beta79,
+    lambda = NA),
+  as_tibble(out_bsar$draws) %>% transmute(model = "SAR",
+    price = beta2, price_ind = NA,
+    income = beta3, income_ind = NA,
+    lambda = lambda_SAR),
+  as_tibble(out_bsem$draws) %>% transmute(model = "SEM",
+    price = beta2, price_ind = NA,
+    income = beta3, income_ind = NA,
+    lambda = lambda_SEM),
+  as_tibble(out_bsdm$draws) %>% transmute(model = "SDM",
+    price = beta2, price_ind = beta78,
+    income = beta3, income_ind = beta79,
+    lambda = lambda_SAR),
+  as_tibble(out_bsdem$draws) %>% transmute(model = "SDEM",
+    price = beta2, price_ind = beta78,
+    income = beta3, income_ind = beta79,
+    lambda = lambda_SEM)
+) %>% tidyr::pivot_longer(cols = 2:6)
+
+tbl <- d1 %>% group_by(model, name) %>%
+  summarise_all(list(mean = mean, sd = sd)) %>%
+  tidyr::pivot_longer(cols = 3:4, names_to = "measure") %>%
+  mutate(value = round(value, 3)) %>%
+  mutate(value = ifelse(measure == "sd", gsub("(.*)", "(\\1)", value), value)) %>%
+  tidyr::pivot_wider(names_from = model)
+tbl <- tbl[c(7, 8, 1, 2, 9, 10, 3, 4, 5, 6),
+  c("name", "LM", "SEM", "SDEM", "SLX", "SDM", "SAR")]
+
+tbl[is.na(tbl)] <- ""
+tbl %>% as.data.frame() %>% toLatex()
 
 # Inverse-distance decay ---
 

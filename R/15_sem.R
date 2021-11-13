@@ -103,7 +103,7 @@ get_sem_class <- function(parent = NormalGamma) {
         private$SEM$ldet$ev <- eigen(private$SEM$ldet$get_W(),
           symmetric = is_symmetric(private$SEM$Psi), only.values = TRUE)$values
         # The log-determinant of I - lambda W is just the sum of log(1 - lambda * omega)
-        private$SEM$ldet$get_ldet <- \(lambda, ...) {
+        private$SEM$ldet$get_ldet <- function(lambda, ...) {
           Re(sum(log(1 - lambda * private$SEM$ldet$ev))) * private$SEM$ldet$reps
         }
       }

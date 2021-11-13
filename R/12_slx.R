@@ -89,7 +89,11 @@ get_slx_class <- function(parent = NormalGamma) {
       if(!is.null(self$MH$SLX_delta)) {
         # Prepare RSS as a function of delta
         get_rss <- function(value) {
-          sq_sum(self$y - cbind(super$X, private$SLX$Psi(value) %*% private$SLX$X_SLX) %*% self$beta)
+          X <- cbind(super$X, private$SLX$Psi(value) %*% private$SLX$X_SLX)
+          beta <- solve(private$NG$prec0 + crossprod(X) / self$sigma,
+            (crossprod(X, self$y) / self$sigma + self$prior_precision %*% private$NG$mu0))
+          sq_sum(self$y - X %*% beta)
+          # sq_sum(self$y - cbind(super$X, private$SLX$Psi(value) %*% private$SLX$X_SLX) %*% self$beta)
         }
 
         # Metropolis-Hastings step for delta
@@ -111,9 +115,9 @@ get_slx_class <- function(parent = NormalGamma) {
 
     # Acessor functions ---
     get_parameters = function() {
-      pars <- list("beta" = self$beta, "sigma" = self$sigma)
-      if(!is.null(self$MH$SLX_delta)) pars$SLX_delta <- private$SLX$delta
-      pars
+      pars <- super$get_parameters
+      pars$delta_SLX <- private$SLX$delta
+      return(pars)
     },
     get_SLX = function() {private$SLX}
   ),

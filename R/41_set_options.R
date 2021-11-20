@@ -10,6 +10,7 @@
 #' the spatial term 'theta' are provided to \emph{NG} instead.
 #' @param SEM Settings for the spatial error setup. See \code{\link{set_SAR}}.
 #' @param SV Settings for the stochastic volatility setup. See \code{\link{set_SV}}.
+#' @param ... Used to provide custom prior elements.
 #'
 #' @return Returns a list with priors and settings for a Bayesian model.
 #' @export
@@ -20,14 +21,14 @@ set_options <- function(
   type = c("Independent", "Conjugate", "Shrinkage", "Horseshoe"),
   NG = set_NG(), SNG = set_SNG(), HS = set_HS(),
   SAR = set_SAR(), SLX = set_SLX(), SEM = set_SEM(),
-  SV = set_SV()
+  SV = set_SV(), ...
   ) {
 
   type <- match.arg(type)
 
   priors <- list("NG" = NG, # Normal-Gamma (independent or conjugate)
     "SNG" = SNG, "HS" = HS, # Shrinkage Normal-Gamma or Horseshoe
-    "SAR" = SAR, "SLX" = SLX, "SEM" = SEM, "SV" = SV)
+    "SAR" = SAR, "SLX" = SLX, "SEM" = SEM, "SV" = SV, ...)
 
   structure(list(
     "type" = type, "priors" = priors

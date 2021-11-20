@@ -1,5 +1,5 @@
 
-#' Bayesian model
+#' Fit a Bayesian model
 #'
 #' @param x Formula or \code{bm} object to sample with.
 #' @param data A \code{\link{data.frame}} containing the variables in the model.

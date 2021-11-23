@@ -36,4 +36,4 @@ out_bsdem <- bsdem(y ~ X, W = W, X_SLX = X_lag,
 out_sdem <- errorsarlm(y ~ X_LX - 1, listw = listw)
 
 # Store results
-save.image("cigarettes_contig.Rda")
+save.image("paper/cigarettes_contig.Rda")

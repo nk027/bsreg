@@ -6,9 +6,9 @@ library("readxl")
 # Kindly made available by Paul Elhorst at <https://spatial-panels.com/>
 df <- read_excel("paper/data/cigarette+2var.xls") %>%
   mutate(year = factor(year + 1963), state = factor(state))
-contig <- read_excel("~/repos/bse/data/Spat-Sym-US.xls",
+contig <- read_excel("paper/data/Spat-Sym-US.xls",
   col_names = paste0(1:46)) %>% as.matrix()
-xy <- read_excel("~/repos/bse/data/cigar_states.xls", col_names = TRUE)
+xy <- read_excel("paper/data/cigar_states.xls", col_names = TRUE)
 
 # Utah has a wrong longitude
 xy %>% filter(Name == "UTAH") # 11.9 is off the Irish coast

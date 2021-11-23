@@ -21,4 +21,4 @@ out_slxdx <- bslx(y ~ X, W = Psi, X_SLX = X_lag,
     SLX = set_SLX(delta = 3, delta_scale = 0.05, delta_a = 2, delta_b = 2)))
 
 # Store results
-save.image("cigarettes_dist.Rda")
+save.image("paper/cigarettes_dist.Rda")

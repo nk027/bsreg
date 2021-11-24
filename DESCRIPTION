@@ -9,7 +9,8 @@ Author: Nikolas Kuschnig [aut, cre] (<https://orcid.org/0000-0002-6642-2543>)
 Maintainer: Nikolas Kuschnig <nikolas.kuschnig@wu.ac.at>
 Description: Fit Bayesian models with a focus on the spatial econometric models.
 Depends: R (>= 3.5.0)
-Imports: R6, Matrix, stochvol, stats, graphics, utils, grDevices
+Imports: R6, Matrix, stats, graphics, utils, grDevices
+Suggests: stochvol
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

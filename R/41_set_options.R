@@ -107,7 +107,7 @@ set_HS <- function(lambda = 1, tau = 1, zeta = 1, nu = 1) {
 #' @param lambda_scale Numeric scalar with the proposal scale of 'lambda'.
 #' @param lambda_min,lambda_max Numeric scalars with upper and lower bounds for 'lambda'.
 #' @param delta_a,delta_b Numeric scalars with the prior shapes of the connectivity parameter 'delta'.
-#' @param delta_scale Numeric scalar with the proposal scale of 'delta'. Defauts to zero for a fixed value.
+#' @param delta_scale Numeric scalar with the proposal scale of 'delta'. Defaults to zero for a fixed value.
 #' @param delta_min,delta_max Numeric scalars with upper and lower bounds for 'delta'.
 #' @param lambda,delta Numerics with starting values for the respective parameter.
 #'

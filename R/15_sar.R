@@ -39,7 +39,7 @@ get_sar_class <- function(parent = NormalGamma) {
       # Initialise MH ---
 
       self$MH$SAR_lambda <- MH_SAR_lambda$new(value = priors$SAR$lambda, scale = priors$SAR$lambda_scale,
-        shape_a = priors$SAR$lambda_a, shape_b = priors$SAR$lambda_b,
+        prior = priors$SAR$lambda_prior, shape_a = priors$SAR$lambda_a, shape_b = priors$SAR$lambda_b,
         lower = priors$SAR$lambda_min, upper = priors$SAR$lambda_max)
     },
 

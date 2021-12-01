@@ -157,11 +157,33 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
 
   public = list(
 
-    initialize_lambda = function(shape_a = 1.01, shape_b = 1.01, lower = -Inf, upper = Inf, ...) { # To-do: priors
+    initialize_lambda = function(prior = c("beta", "uniform", "bgamma"),
+      shape_a = 1.01, shape_b = 1.01,
+      lower = -1, upper = 1, ...) {
+
       private$shape_a <- shape_a
       private$shape_b <- shape_b
+      private$tau <- 1L
+
       private$lower <- lower
       private$upper <- upper
+
+      prior <- match.arg(prior)
+      private$prior <- if(prior == "beta") {
+        function(value, ...) {
+          dbeta((value - private$lower) / (private$upper - private$lower),
+            shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE) - log(private$upper - private$lower)
+        }
+      } else if(prior == "uniform") {
+        function(value, ...) {
+          dunif(value, min = private$lower, max = private$upper, log = TRUE)
+        }
+      } else if(prior == "bgamma") {
+        function(value, tau = private$tau, ...) {
+          dbeta((value - private$lower) / (private$upper - private$lower),
+            shape1 = 1 + tau, shape2 = 1 + tau, log = TRUE) - log(private$upper - private$lower)
+        }
+      }
       private$name <- "Spatial lambda"
     },
 
@@ -184,6 +206,22 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
         self$posterior(current, ...) + self$adjustment(proposal, current))
     },
 
+    finalize = function(...) {
+      super$finalize(...)
+      # If we use a Beta-Gamma prior we also sample tau
+      if(private$prior == "bgamma") {self$sample_tau()}
+    },
+
+    sample_tau = function(...) {
+      tau_proposal <- rgamma(1L, shape1 = private$shape_a, shape2 = private$shape_b)
+      tau_probability <- exp(self$prior(tau = private$tau) - self$prior(tau = tau_proposal) +
+        dgamma(1 - private$tau, shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE) -
+        dgamma(1 - tau_proposal, shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE))
+      if(isTRUE(runif(1L) < tau_probability)) {
+        private$tau <- tau_proposal
+      }
+    },
+
     adjustment = function(proposal = private$proposal, current = private$value) {
       0
       # (1 - proposal^2) - (1 - current^2) # Proposed z transformed variable
@@ -195,11 +233,16 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
     },
 
     prior = function(value = private$value, ...) {
-      dbeta((value + 1) / 2, shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE) - log(2)
+      private$prior(value, ...)
     }
   ),
 
+  active = list(
+    get_tau = function() {private$tau},
+  ),
+
   private = list(
+    prior = NULL, tau = NULL,
     shape_a = NULL, shape_b = NULL,
     lower = NULL, upper = NULL,
     N = NULL, M = NULL
@@ -230,11 +273,45 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
 
   public = list(
 
-    initialize_delta = function(shape_a = 2, shape_b = 1, lower = 1e-12, upper = Inf, ...) {
+    initialize_delta = function(
+      prior = c("igamma", "lnormal", "weibull", "uniform", "bbinom", "bnbinom"),
+      shape_a = 2, shape_b = 1, size = NA_real_,
+      lower = 1e-12, upper = Inf, ...) {
+
       private$shape_a <- shape_a
       private$shape_b <- shape_b
+
       private$lower <- lower
       private$upper <- upper
+
+      prior <- match.arg(prior)
+      private$prior <- if(prior == "igamma") {
+        function(value, ...) {
+          dgamma(1 / value, shape = private$shape_a, rate = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "lognormal") {
+        function(value, ...) {
+          dlnorm(value, meanlog = private$shape_a, sdlog = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "weibull") {
+        function(value, ...) {
+          dweibull(value, shape = private$shape_a, scale = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "betabinom") {
+        function(value, ...) {
+          dbbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "betabinom") {
+        function(value, ...) {
+          dbbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "uniform") {
+        function(value, ...) {
+          dunif(value, min = private$lower, max = private$upper, log = TRUE)
+        }
+      }
+      private$prior_type <- if(prior %in% c("bbinom", "bnbinom")) {"discrete"} else {"continuous"}
+
       private$name <- "Connectivity delta"
     },
 
@@ -244,9 +321,14 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
     },
 
     propose = function(location = private$value, scale = private$scale, ...) {
-      while(TRUE) {
-        private$proposal <- rnorm(1L, location, scale)
+      if(private$prior_type == "discrete") {
+        private$proposal <- round(rnorm(1L, location, scale))
         if(private$proposal < private$upper && private$proposal > private$lower) {break}
+      } else {
+        while(TRUE) {
+          private$proposal <- rnorm(1L, location, scale)
+          if(private$proposal < private$upper && private$proposal > private$lower) {break}
+        }
       }
     },
 
@@ -266,13 +348,33 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
     },
 
     prior = function(value = private$value, ...) {
-      dgamma(1 / value, shape = private$shape_a, rate = private$shape_b, log = TRUE)
+      private$prior(value, ...)
     }
   ),
 
   private = list(
+    prior = NULL,
     shape_a = NULL, shape_b = NULL,
     lower = NULL, upper = NULL,
     N = NULL, M = NULL
+  )
+)
+
+
+
+#' Metropolis-Hastings step for delta in the spatial autoregressive model
+#'
+#' @docType class
+#'
+#' @importFrom R6 R6Class
+#'
+#' @noRd
+MH_SAR_delta <- R6Class("MH_SAR_delta", inherit = MH_SLX_delta,
+
+  public = list(
+    posterior = function(value = private$value, ...) {
+      dots <- list(...)
+      dots$get_ldet(value) - (private$N - private$M) / 2 * log(dots$get_rss(value)) + self$prior(value)
+    }
   )
 )

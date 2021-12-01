@@ -40,7 +40,7 @@ get_slx_class <- function(parent = NormalGamma) {
       # Only sample delta if a proposal scale is set
       if(priors$SLX$delta_scale > 0) {
         self$MH$SLX_delta <- MH_SLX_delta$new(value = priors$SLX$delta, scale = priors$SLX$delta_scale,
-          shape_a = priors$SLX$delta_a, shape_b = priors$SLX$delta_b,
+          prior = priors$SLX$delta_prior, shape_a = priors$SLX$delta_a, shape_b = priors$SLX$delta_b,
           lower = priors$SLX$delta_min, upper = priors$SLX$delta_max)
       }
 

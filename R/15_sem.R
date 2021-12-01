@@ -45,7 +45,7 @@ get_sem_class <- function(parent = NormalGamma) {
       # Initialise MH ---
 
       self$MH$SEM_lambda <- MH_SEM_lambda$new(value = priors$SEM$lambda, scale = priors$SEM$lambda_scale,
-        shape_a = priors$SEM$lambda_a, shape_b = priors$SEM$lambda_b,
+        prior = priors$SEM$lambda_prior, shape_a = priors$SEM$lambda_a, shape_b = priors$SEM$lambda_b,
         lower = priors$SEM$lambda_min, upper = priors$SEM$lambda_max)
     },
 

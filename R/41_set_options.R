@@ -114,10 +114,13 @@ set_HS <- function(lambda = 1, tau = 1, zeta = 1, nu = 1) {
 #' @return Returns a list with priors and settings.
 #' @export
 set_SAR <- function(
+  lambda_prior = c("beta", "uniform", "bgamma"),
   lambda_a = 1.01, lambda_b = 1.01, lambda = 0, lambda_scale = 0.1, lambda_min = -1, lambda_max = 1 - 1e-12,
+  delta_prior = c("inversegamma", "lnormal", "weibull", "bbinom", "bnbinom", "uniform"),
   delta_a = 1.01, delta_b = 1.01, delta = 1, delta_scale = 0, delta_min = 1e-12, delta_max = Inf) {
 
   structure(list(
+    lambda_prior = match.arg(lambda_prior),
     lambda_a = num_check(lambda_a, min = 1e-12, max = Inf,
       msg = "Please provide a valid shape for lambda (spatial) via 'lambda_a'."),
     lambda_b = num_check(lambda_b, min = 1e-12, max = Inf,
@@ -130,6 +133,7 @@ set_SAR <- function(
       msg = "Please provide a valid starting value for lambda (spatial) via 'lambda'."),
     lambda_scale = num_check(lambda_scale, min = 1e-12, max = Inf,
       msg = "Please provide a valid proposal scale for lambda (spatial) via 'lambda_scale'."),
+    delta_prior = match.arg(delta_prior),
     delta_a = num_check(delta_a, min = 1e-12, max = Inf,
       msg = "Please provide a valid shape for delta (spatial) via 'delta_a'."),
     delta_b = num_check(delta_b, min = 1e-12, max = Inf,

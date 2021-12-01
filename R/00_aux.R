@@ -132,3 +132,37 @@ has_package <- function(package) {
 
   return(NULL)
 }
+
+
+#' Density of a Beta Binomial distribution
+#'
+#' @param x Numeric scalar with the value.
+#' @param size Integer scalar. Number of trials.
+#' @param alpha,beta Numeric scalar. Shape parameters.
+#' @param log Logical scalar. Whether to log probabilities.
+#'
+#' @noRd
+dbbinom <- function(x, size, alpha, beta, log = TRUE) {
+  if(log) {
+    lchoose(size, x) + lbeta(x + alpha, size - x + beta) - lbeta(alpha, beta)
+  } else {
+    choose(size, x) * beta(x + alpha, size - x + beta) / beta(alpha, beta)
+  }
+}
+
+
+#' Density of a Beta Negative Binomial distribution
+#'
+#' @param x Numeric scalar with the value.
+#' @param r Integer scalar. Number of trials.
+#' @param alpha,beta Numeric scalar. Shape parameters.
+#' @param log Logical scalar. Whether to log probabilities.
+#'
+#' @noRd
+dbnbinom <- function(x, size, alpha, beta, log = TRUE) {
+  if(log) {
+    lgamma(size + x) - lgamma(x + 1) - lgamma(size) + lbeta(alpha + size, beta + x) - lbeta(alpha, beta)
+  } else {
+    gamma(size + x) / (factorial(x) * gamma(size)) * beta(alpha + size, beta + x) / beta(alpha, beta)
+  }
+}

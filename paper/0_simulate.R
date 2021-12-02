@@ -12,7 +12,7 @@ M <- length(beta)
 theta <- beta[-1] * .5
 sigma <- .1
 lambda <- .5
-delta <- 1
+delta <- 2
 # Connectivity
 xy <- cbind(runif(N), runif(N))
 dist <- as.matrix(dist(xy))
@@ -40,16 +40,40 @@ y_sac <- solve(S, X %*% beta + solve(D, rnorm(N, 0, sigma)))
 
 y <- y_sar
 
+# Test delta
 x <- get_bsar(y, X, Psi = Psi,
   options = set_options(SAR = set_SAR(
     lambda = 0, lambda_a = 1.01, lambda_b = 1.01, lambda_scale = 0.1, lambda_min = -1, lambda_max = 1,
-    delta = 2, delta_a = 2, delta_b = 1, delta_scale = 0.1, delta_min = 0.01, delta_max = 10)),
+    delta = 2, delta_a = 2, delta_b = 2, delta_scale = 0.1, delta_min = 0.01, delta_max = 10)),
   ldet_SAR = list(grid = FALSE, reps = 1L, i_lambda = c(-1, 1 - 1e-12, 100L), i_delta = c(0.1, 5, 10)))
+
+s <- sample(x, 1000)
+
+# Test shrinkage
+x1 <- get_bsar(y, X, Psi = W,
+  options = set_options(SAR = set_SAR(
+    lambda_prior = "bgamma",
+    lambda = 0, lambda_a = 0.1, lambda_b = 0.1, lambda_scale = 0.1, lambda_min = -1, lambda_max = 1)))
+x2 <- get_bsar(y, X, Psi = W,
+  options = set_options(SAR = set_SAR(
+    lambda_prior = "beta",
+    lambda = 0, lambda_a = 1.01, lambda_b = 1.01, lambda_scale = 0.1, lambda_min = -1, lambda_max = 1)))
+
+s1 <- matrix(NA_real_, 10000, length(unlist(x1$get_parameters)) + 1)
+for(i in seq(10000)) {
+  x1$sample()
+  s1[i, 1:(ncol(s1) - 1)] <- unlist(x1$get_parameters)
+  s1[i, ncol(s1)] <- x1$MH$SAR_lambda$get_tau
+}
+s2 <- sample(x2, 10000)
+
+summary(s1[-1:-100, ])
+summary(s2[-1:-100, ])
 
 x$sample()
 x$get_parameters
 
-s <- sample(x, 1000)
+
 for(i in seq(1000)) s <- rbind(s, sample(x, 100))
 plot.ts(s)
 summary(s[-1:-100, ])

@@ -202,8 +202,8 @@ get_sar_class <- function(parent = NormalGamma) {
 
       if(!is.null(self$MH$SAR_delta)) {
         # Prepare RSS and log-determinant as functions of delta
-        e <- super$y - self$X %*% self$beta
-        get_rss <- function(value) {sq_sum(e - private$SAR$lambda * private$SAR$Psi(value) %*% e)}
+        res <- super$y - self$X %*% self$beta
+        get_rss <- function(value) {sq_sum(res - private$SAR$lambda * private$SAR$Psi(value) %*% super$y)}
         get_ldet <- function(value) {private$SAR$ldet$get_ldet(lambda = private$SAR$lambda, delta = value)}
 
         # Metropolis-Hastings step for delta

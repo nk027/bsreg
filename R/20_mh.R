@@ -163,7 +163,7 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
 
       private$shape_a <- shape_a
       private$shape_b <- shape_b
-      private$tau <- 1L
+      private$tau <- 1e-12
 
       private$lower <- lower
       private$upper <- upper
@@ -217,8 +217,8 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
     sample_tau = function(...) {
       tau_proposal <- rgamma(1L, shape = private$shape_a, rate = private$shape_b)
       tau_probability <- exp(self$prior(tau = private$tau) - self$prior(tau = tau_proposal) +
-        dgamma(1 - private$tau, shape = private$shape_a, rate = private$shape_b, log = TRUE) -
-        dgamma(1 - tau_proposal, shape = private$shape_a, rate = private$shape_b, log = TRUE))
+        dgamma(private$tau, shape = private$shape_a, rate = private$shape_b, log = TRUE) -
+        dgamma(tau_proposal, shape = private$shape_a, rate = private$shape_b, log = TRUE))
       if(isTRUE(runif(1L) < tau_probability)) {
         private$tau <- tau_proposal
       }

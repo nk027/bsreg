@@ -116,7 +116,7 @@ set_HS <- function(lambda = 1, tau = 1, zeta = 1, nu = 1) {
 set_SAR <- function(
   lambda_prior = c("beta", "uniform", "bgamma"),
   lambda_a = 1.01, lambda_b = 1.01, lambda = 0, lambda_scale = 0.1, lambda_min = -1, lambda_max = 1 - 1e-12,
-  delta_prior = c("inversegamma", "lnormal", "weibull", "bbinom", "bnbinom", "uniform"),
+  delta_prior = c("igamma", "lnormal", "weibull", "uniform", "bbinom", "bnbinom"),
   delta_a = 1.01, delta_b = 1.01, delta = 1, delta_scale = 0, delta_min = 1e-12, delta_max = Inf) {
 
   structure(list(

@@ -24,7 +24,7 @@ get_sar_class <- function(parent = NormalGamma) {
 
       # Build SAR object ---
 
-      # Function to update the latent, i.e. z(lambda) = y - lambda W y, with new parameters
+      # Function to update the latent, i.e. z(lambda, delta) = y - lambda W(delta) y, with new parameters
       private$SAR$set_latent <- function(lambda = private$SAR$lambda, Wy = self$Wy) {
         private$SAR$z <- super$y - lambda * Wy
       }
@@ -43,7 +43,7 @@ get_sar_class <- function(parent = NormalGamma) {
         private$SAR$W <- private$SAR$Psi(delta)
         # Update the cache
         private$SAR$Wy <- private$SAR$W %*% super$y
-        private$SAR$XWy <- crossprod(super$X, private$SAR$Wy)
+        # private$SAR$XWy <- crossprod(super$X, private$SAR$Wy)
         # Update the latent
         private$SAR$set_latent(Wy = private$SAR$Wy)
       }
@@ -64,13 +64,13 @@ get_sar_class <- function(parent = NormalGamma) {
     },
 
     # High priority 9 for latent
-    setup_9SAR = function(Psi_SAR = NULL, reps = 1L,
-      ldet_SAR = list(grid = FALSE, i_lambda = c(-1, 1 - 1e-12, 100L), i_delta = c(1e-12, 10, 20)),
+    setup_9SAR = function(Psi_SAR = NULL,
+      ldet_SAR = list(grid = FALSE, reps = 1L, i_lambda = c(-1, 1 - 1e-12, 100L), i_delta = c(1e-12, 10, 20)),
       ...) {
 
       # Work out connectivity ---
 
-      if(is.null(Psi_SAR)) {stop("Please provide a connectivity matrix 'Psi_SAR'.")}
+      if(is.null(Psi_SAR)) {stop("Please provide a connectivity function or matrix 'Psi_SAR'.")}
 
       if(is.matrix(Psi_SAR)) {
         private$SAR$Psi_fixed <- TRUE
@@ -80,7 +80,7 @@ get_sar_class <- function(parent = NormalGamma) {
         # Set lambda and obtain the latent
         private$SAR$set_lambda(private$SAR$priors$lambda)
       } else {
-        private$SAR$Psi_fixed <- TRUE
+        private$SAR$Psi_fixed <- FALSE
         private$SAR$Psi <- Psi_SAR
         # Manually set lambda and then set delta to obtain W(delta), the cache, and the latent
         private$SAR$lambda <- private$SAR$priors$lambda
@@ -141,11 +141,18 @@ get_sar_class <- function(parent = NormalGamma) {
 
           # We train on a grid over lambda and delta
           pars <- as.matrix(expand.grid(i_seq(private$SAR$ldet$i_lambda), i_seq(private$SAR$ldet$i_delta)))
-          # To-do: eigen-decompose for each gridded delta and use that instead
-          ldets <- apply(pars, 1, function(x) {
-            determinant(diag(private$SAR$ldet$size) - x[1] * private$SAR$ldet$get_W(private$SAR$Psi(x[2])),
-              logarithm = TRUE)$modulus * private$SAR$ldet$reps
-          })
+          ldets <- NULL
+          for(delta in i_seq(private$SAR$ldet$i_delta)) {
+            ev <- eigen(private$SAR$ldet$get_W(private$SAR$Psi(delta)),
+              symmetric = is_symmetric(private$SAR$Psi), only.values = TRUE)$values
+            ldets <- c(ldets, vapply(i_seq(private$SAR$ldet$i_lambda), function(lambda) {
+              Re(sum(log(1 - lambda * ev))) * private$SAR$ldet$reps
+            }, numeric(1L)))
+          }
+          # ldets <- apply(pars, 1, function(x) {
+          #   determinant(diag(private$SAR$ldet$size) - x[1] * private$SAR$ldet$get_W(private$SAR$Psi(x[2])),
+          #     logarithm = TRUE)$modulus * private$SAR$ldet$reps
+          # })
           private$SAR$ldet$gp <- GauPro::GauPro(pars, ldets, parallel = FALSE)
           # The log-determinent is predicted using the Gaussian process
           private$SAR$ldet$get_ldet <- function(lambda = private$SAR$lambda, delta = private$SAR$delta, ...) {
@@ -169,7 +176,7 @@ get_sar_class <- function(parent = NormalGamma) {
       # Prepare RSS and the log-determinant as functions of lambda
       get_rss <- {function() {
         prec_ch <- chol(private$NG$prec0 + self$XX / self$sigma)
-        b0 <- backsolve(prec_ch, forwardsolve(prec_ch, (private$NG$prec0 %*% private$NG$mu0 + crossprod(self$X, super$y) / self$sigma),
+        b0 <- backsolve(prec_ch, forwardsolve(prec_ch, (private$NG$prec0 %*% private$NG$mu0 + self$Xy / self$sigma),
           upper.tri = TRUE, transpose = TRUE))
         b1 <- backsolve(prec_ch, forwardsolve(prec_ch, (private$NG$prec0 %*% private$NG$mu0 + self$XWy / self$sigma),
           upper.tri = TRUE, transpose = TRUE))
@@ -195,7 +202,8 @@ get_sar_class <- function(parent = NormalGamma) {
 
       if(!is.null(self$MH$SAR_delta)) {
         # Prepare RSS and log-determinant as functions of delta
-        get_rss <- function(value) {sq_sum(super$y - private$SAR$lambda * private$SAR$Psi(value) %*% super$y)}
+        e <- super$y - self$X %*% self$beta
+        get_rss <- function(value) {sq_sum(e - private$SAR$lambda * private$SAR$Psi(value) %*% e)}
         get_ldet <- function(value) {private$SAR$ldet$get_ldet(lambda = private$SAR$lambda, delta = value)}
 
         # Metropolis-Hastings step for delta
@@ -221,6 +229,7 @@ get_sar_class <- function(parent = NormalGamma) {
     get_parameters = function() {
       pars <- super$get_parameters
       pars$lambda_SAR <- private$SAR$lambda
+      if(!private$SAR$Psi_fixed) {pars$delta_SAR <- private$SAR$delta}
       return(pars)
     },
     get_effects = function() { # To-do: use eigendecomposition or provide alternative methods to be more efficient

@@ -169,7 +169,7 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
       private$upper <- upper
 
       prior <- match.arg(prior)
-      private$prior <- if(prior == "beta") {
+      private$prior_fun <- if(prior == "beta") {
         function(value, ...) {
           dbeta((value - private$lower) / (private$upper - private$lower),
             shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE) - log(private$upper - private$lower)
@@ -184,6 +184,8 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
             shape1 = 1 + tau, shape2 = 1 + tau, log = TRUE) - log(private$upper - private$lower)
         }
       }
+      private$prior_type <- prior
+
       private$name <- "Spatial lambda"
     },
 
@@ -209,14 +211,14 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
     finalize = function(...) {
       super$finalize(...)
       # If we use a Beta-Gamma prior we also sample tau
-      if(private$prior == "bgamma") {self$sample_tau()}
+      if(private$prior_type == "bgamma") {self$sample_tau()}
     },
 
     sample_tau = function(...) {
-      tau_proposal <- rgamma(1L, shape1 = private$shape_a, shape2 = private$shape_b)
+      tau_proposal <- rgamma(1L, shape = private$shape_a, rate = private$shape_b)
       tau_probability <- exp(self$prior(tau = private$tau) - self$prior(tau = tau_proposal) +
-        dgamma(1 - private$tau, shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE) -
-        dgamma(1 - tau_proposal, shape1 = private$shape_a, shape2 = private$shape_b, log = TRUE))
+        dgamma(1 - private$tau, shape = private$shape_a, rate = private$shape_b, log = TRUE) -
+        dgamma(1 - tau_proposal, shape = private$shape_a, rate = private$shape_b, log = TRUE))
       if(isTRUE(runif(1L) < tau_probability)) {
         private$tau <- tau_proposal
       }
@@ -233,16 +235,16 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
     },
 
     prior = function(value = private$value, ...) {
-      private$prior(value, ...)
+      private$prior_fun(value, ...)
     }
   ),
 
   active = list(
-    get_tau = function() {private$tau},
+    get_tau = function() {private$tau}
   ),
 
   private = list(
-    prior = NULL, tau = NULL,
+    prior_fun = NULL, prior_type = NULL, tau = NULL,
     shape_a = NULL, shape_b = NULL,
     lower = NULL, upper = NULL,
     N = NULL, M = NULL
@@ -285,7 +287,7 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
       private$upper <- upper
 
       prior <- match.arg(prior)
-      private$prior <- if(prior == "igamma") {
+      private$prior_fun <- if(prior == "igamma") {
         function(value, ...) {
           dgamma(1 / value, shape = private$shape_a, rate = private$shape_b, log = TRUE)
         }
@@ -322,8 +324,10 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
 
     propose = function(location = private$value, scale = private$scale, ...) {
       if(private$prior_type == "discrete") {
-        private$proposal <- round(rnorm(1L, location, scale))
-        if(private$proposal < private$upper && private$proposal > private$lower) {break}
+        while(TRUE) {
+          private$proposal <- round(rnorm(1L, location, scale))
+          if(private$proposal < private$upper && private$proposal > private$lower) {break}
+        }
       } else {
         while(TRUE) {
           private$proposal <- rnorm(1L, location, scale)
@@ -344,16 +348,16 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
 
     posterior = function(value = private$value, ...) {
       dots <- list(...)
-      -(private$N - private$M) / 2 * log(dots$get_rss(value)) + self$prior(value)
+      -(private$N - private$M) / 2 * log(dots$get_rss(value)) + self$prior(value, ...)
     },
 
     prior = function(value = private$value, ...) {
-      private$prior(value, ...)
+      private$prior_fun(value, ...)
     }
   ),
 
   private = list(
-    prior = NULL,
+    prior_fun = NULL, prior_type = NULL,
     shape_a = NULL, shape_b = NULL,
     lower = NULL, upper = NULL,
     N = NULL, M = NULL

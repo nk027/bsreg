@@ -3,7 +3,14 @@
 library("dplyr")
 library("readxl")
 
-# Kindly made available by Paul Elhorst at <https://spatial-panels.com/>
+# Data kindly made available by Paul Elhorst at <https://spatial-panels.com/>
+download.file(
+  "https://spatial-panels.com/wp-content/uploads/2017/06/Files-SLX-paper.zip",
+  destfile = "paper/data/halleckvega2015.zip")
+unzip("paper/data/halleckvega2015.zip", exdir = "paper/data",
+  files = c("cigarette+2var.xls", "Spat-Sym-US.xls", "cigar_states.xls"))
+
+# Prepare the data
 df <- read_excel("paper/data/cigarette+2var.xls") %>%
   mutate(year = factor(year + 1963), state = factor(state))
 contig <- read_excel("paper/data/Spat-Sym-US.xls",

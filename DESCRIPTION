@@ -1,7 +1,7 @@
 Package: bsreg
 Type: Package
 Title: Bayesian Spatial Regression Models
-Version: 0.0.1
+Version: 0.0.1.9000
 Date: 2021-11-24
 Authors@R:
     person(given = "Nikolas", family = "Kuschnig", role = c("aut", "cre"), email = "nikolas.kuschnig@wu.ac.at", comment = c(ORCID = "0000-0002-6642-2543"))

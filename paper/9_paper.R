@@ -2,7 +2,7 @@
 set.seed(42)
 library("bsreg")
 
-# Code in the paper ---
+# Code in the paper -----
 
 # Plain linear model (Independent Normal-Gamma)
 x <- blm(log(sales) ~ log(price), data = cigarettes)
@@ -12,7 +12,7 @@ x <- blm(log(sales) ~ log(price), data = cigarettes,
   options = set_options("Conjugate",
     NG = set_NG(prec = 1e-4, shape = 1, rate = 1)))
 
-# Construct an inverse distance-decay matrix
+# Construct an inverse distance-decay matrix ---
 xy <- cigarettes[cigarettes[["year"]] == 1980, c("longitude", "latitude")]
 dist <- as.matrix(dist(xy))
 diag(dist) <- Inf
@@ -28,7 +28,24 @@ x <- bsdm(log(sales) ~ log(price), data = cigarettes,
     SAR = set_SAR(lambda_a = 1, lambda_b = 1)),
   n_save = 5000L, n_burn = 1000L)
 
-# Extra code ---
+# Outputs ---
+
+# Convergence
+plot(x)
+plot(as.mcmc(x))
+coda::geweke.diag(as.mcmc(x))
+
+# Analysis
+print(x)
+apply(x[[1]], 2, quantile, c(0.025, 0.5, 0.975))
+coda::HPDinterval(as.mcmc(x))
+plot(density(x[[1]][, "lambda_SAR"]))
+
+# Add more draws
+x <- bm(x, n_save = 5000L)
+
+
+# Extra code -----
 
 # The results in Section 5 use the data by Halleck-Vega and Elhorst (2015),
 # including their choices with respect to spatial connectivity. These results

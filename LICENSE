@@ -1,3 +1,14 @@
+R Package bsreg: Bayesian Spatial Regression Models
+GPL (>= 3)
+Copyright (C) 2022 Nikolas Kuschnig
+
+United States Historical States Database
+CC BY-NC-SA 2.5
+Copyright (C) 2022 Atlas of Historical County Boundaries
+
+===========================================================================
+
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -70,7 +81,7 @@ modification follow.
 
                        TERMS AND CONDITIONS
 
-  0. Definitions.
+  1. Definitions.
 
   "This License" refers to version 3 of the GNU General Public License.
 

@@ -27,13 +27,13 @@
 #'
 #' @docType data
 #'
-#' @format A \code{data.frame} object.
+#' @format A \code{sf} object.
 #'
 #' @references
 #'   Siczewicz, P. (2011) U.S. Historical States and Territories (Generalized
 #'   0.01 deg). Dataset. Atlas of Historical County Boundaries, edited by
 #'   Long, J. H. . Chicago: The Newberry Library, 2011. Available online from
-#'   \url{https://publications.newberry.org/ahcbp}.
+#'   \url{https://publications.newberry.org/ahcbp/}.
 #'
-#' @source \url{https://publications.newberry.org/ahcb/}
+#' @source \url{https://publications.newberry.org/ahcbp/}
 "us_states"

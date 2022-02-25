@@ -2,7 +2,8 @@
 #' Cigarette demand
 #'
 #' Panel dataset on cigarette demand in 46 US states from 1963 until 1992,
-#' see Baltagi and Levin (1992) and Baltagi and Li (2004).
+#' see Baltagi and Levin (1992) and Baltagi and Li (2004). Extended with
+#' longitude and latitude from the \code{us_states} dataset.
 #'
 #' @docType data
 #'

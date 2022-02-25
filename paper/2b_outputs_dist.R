@@ -57,6 +57,9 @@ delta <- seq(2, 4, 0.01)
 avg_weight <- sapply(delta, \(x) sum(Psi(x)) / N)
 s <- splinefun(delta, avg_weight)
 
+# Scaling factor for the table
+round(sapply(c(2, 3, 4, 3.01, 2.54, 3.74), s), 2)
+
 d_te <- d_te %>% mutate(
   price_t = price + price_i * s(delta),
   income_t = income + income_i * s(delta)) %>%

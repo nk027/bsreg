@@ -55,9 +55,6 @@ for(i in seq_along(out)) {
 }
 
 
-
-
-  fo
 mean <- shapes / rates
 variance <- shapes / rates^2
 

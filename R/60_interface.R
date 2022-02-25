@@ -23,6 +23,12 @@
 #' y <- X %*% beta + rnorm(N)
 #'
 #' bm(y ~ X, n_burn = 100, n_draw = 100)
+#'
+#' \donttest{
+#' # Reproduce the linear model in Kuschnig (2022)
+#' blm(log(sales) ~ log(price / cpi) + log(ndi / cpi) +
+#'   factor(name) + factor(year), data = cigarettes)
+#'}
 bm <- function(x, ...) {UseMethod("bm", x)}
 
 

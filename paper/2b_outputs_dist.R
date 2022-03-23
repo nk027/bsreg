@@ -1,5 +1,7 @@
 
 # Generate outputs ---
+library("dplyr")
+library("spatialreg")
 library("ggplot2")
 library("ggdist") # Dotplots
 
@@ -85,7 +87,7 @@ p1 <- d_te %>% transmute(model, price_t) %>%
   ggplot(aes(x = model, y = value, fill = model, col = model)) +
   geom_hline(yintercept = 0, lwd = 1.5, col = "#a4a4a4") +
   stat_dots(quantiles = 250, width = .75, justification = -0.2) +
-  geom_boxplot(col = "#444444", alpha = 0.75, # No points for outliers
+  geom_boxplot(col = "#444444", alpha = 1, # No points for outliers
     width = .2, size = .8, outlier.color = NA) +
   coord_cartesian(ylim = c(-1.5, -0.6)) + # Manually set limits
   ggtitle("Price effect by connectivity") + ylab("total effect") + xlab("") +
@@ -107,7 +109,7 @@ p2 <- d_te %>% transmute(model, income_t) %>%
   ggplot(aes(x = model, y = value, fill = model, col = model)) +
   geom_hline(yintercept = 0, lwd = 1.5, col = "#a4a4a4") +
   stat_dots(quantiles = 250, width = .75, justification = -0.2) +
-  geom_boxplot(col = "#444444", alpha = 0.75, # No points for outliers
+  geom_boxplot(col = "#444444", alpha = 1, # No points for outliers
     width = .2, size = .8, outlier.color = NA) +
   coord_cartesian(ylim = c(0.1, 0.8)) +
   ggtitle("Income effect by connectivity") + ylab("total effect") + xlab("") +
@@ -124,9 +126,9 @@ p2 <- d_te %>% transmute(model, income_t) %>%
 
 # Merge and save the plots
 gridExtra::grid.arrange(p1, p2, ncol = 2)
-# ggsave(file = "cigar-dist_te.pdf", # Cairo for unicode delta
-#   plot = gridExtra::arrangeGrob(p1, p2, nrow = 1, ncol = 2),
-#   device = cairo_pdf, width = 9, height = 4)
+ggsave(file = "cigar-dist_te.eps", # Cairo for unicode delta
+  plot = gridExtra::arrangeGrob(p1, p2, nrow = 1, ncol = 2),
+  device = cairo_pdf, width = 9, height = 4)
 
 # Diagnostic plot for delta ---
 
@@ -145,7 +147,7 @@ p1 <- ggplot(d_delta) +
     plot.title = element_text(color = "#333333", size = 18, face = "bold"),
     axis.title.x = element_text(color = "#333333", size = 14, face = "bold"),
     axis.title.y = element_text(color = "#333333", size = 14, face = "bold"),
-    text = element_text(family = "Helvetica")
+    text = element_text(family = "Helvetica"),
     legend.position = "none"
   )
 # Density plot
@@ -163,6 +165,6 @@ p2 <- ggplot(d_delta) +
 
 # Merge and save the plots
 gridExtra::grid.arrange(p1, p2, ncol = 2)
-# ggsave(file = "cigar-dist_delta.pdf", # Cairo for unicode delta
-#   plot = gridExtra::arrangeGrob(p1, p2, nrow = 1, ncol = 2),
-  #   device = cairo_pdf, width = 9, height = 4)
+ggsave(file = "cigar-dist_delta.eps", # Cairo for unicode delta
+  plot = gridExtra::arrangeGrob(p1, p2, nrow = 1, ncol = 2),
+    device = cairo_pdf, width = 9, height = 4)

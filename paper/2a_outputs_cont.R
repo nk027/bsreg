@@ -1,7 +1,10 @@
 
 # Generate outputs ---
+library("dplyr")
+library("spatialreg")
 library("ggplot2")
 library("ggdist") # Dotplots
+library("qqplotr") # QQ plot
 
 # Compute total effects ---
 d_te1 <- rbind(
@@ -51,7 +54,7 @@ p1 <- d_te1 %>% filter(name == "price") %>%
   geom_hline(yintercept = 0, lwd = 1.5, col = "#a4a4a4") +
   stat_dots(aes(col = model), quantiles = 250,
     width = .75, justification = -0.2) + # 250 dots, narrower & shifted right
-  geom_boxplot(col = "#444444", alpha = 0.75, # No points for outliers
+  geom_boxplot(col = "#444444", alpha = 1, # No points for outliers
     width = .2, size = .8, outlier.color = NA) +
   geom_point(data = d_te2, aes(x = model, y = value), # Add freq. estimates
     col = "#444444", shape = 4, stroke = 1.5, size = 3) +
@@ -73,7 +76,7 @@ p2 <- d_te1 %>% filter(name == "income") %>%
   geom_hline(yintercept = 0, lwd = 1.5, col = "#a4a4a4") +
   stat_dots(aes(col = model), quantiles = 250,
     width = .75, justification = -0.2) + # 250 dots, narrower & shifted right
-  geom_boxplot(col = "#444444", alpha = 0.75, # No points for outliers
+  geom_boxplot(col = "#444444", alpha = 1, # No points for outliers
     width = .2, size = .8, outlier.color = NA) +
   geom_point(data = d_te2, aes(x = model, y = value), # Add frequentist estimates
     col = "#444444", shape = 4, stroke = 1.5, size = 3) +
@@ -92,8 +95,8 @@ p2 <- d_te1 %>% filter(name == "income") %>%
 
 # Merge and save the plots
 gridExtra::grid.arrange(p1, p2, nrow = 2)
-# ggsave(file = "cigar-contig_te.pdf",
-  # plot = gridExtra::arrangeGrob(p1, p2, nrow = 2), width = 9, height = 8)
+ggsave(file = "cigar-contig_te.eps",
+  plot = gridExtra::arrangeGrob(p1, p2, nrow = 2), width = 9, height = 8)
 
 # Investigate distribution of total effects ---
 d_qq1 <- d_te1 %>% # Focus on price in the SLX, SDM, and SAR models
@@ -108,7 +111,7 @@ pq1 <- d_qq1 %>%
   facet_grid(. ~ model, scale = "free") + # A model per column
   qqplotr::stat_qq_point(data = d_qq2, pch = 4, size = 0.5, col = "#333333") +
   qqplotr::stat_qq_band(alpha = 0.5, conf = 0.999, band = "pointwise") +
-  qqplotr:stat_qq_line() +
+  qqplotr::stat_qq_line() +
   ggtitle("QQ plot of total price effect") +
   ylab("sample quantiles") + xlab("theoretical quantiles") +
   theme_minimal(base_size = 14) +
@@ -124,7 +127,7 @@ pq1 <- d_qq1 %>%
 
 # Save the plot
 pq1
-# ggsave(file = "cigar-contig_qq.pdf", plot = pq1, width = 9, height = 4)
+ggsave(file = "cigar-contig_qq.png", plot = pq1, width = 9, height = 4)
 
 # Build a table of coefficients ---
 d_tab <- rbind(

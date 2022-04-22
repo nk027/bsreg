@@ -1,6 +1,6 @@
 
 # Load packages ---
-devtools::load_all()
+library("bsreg")
 
 # Settings ---
 n_save <- 50000L

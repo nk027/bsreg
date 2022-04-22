@@ -1,4 +1,7 @@
-paper/data/*
+paper*/data/*
+paper*/*Rda
+paper*/*rda
+
 R/depr/*
 
 # Documentation files

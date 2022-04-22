@@ -5,6 +5,9 @@ library("spatialreg")
 library("ggplot2")
 library("ggdist") # Dotplots
 library("qqplotr") # QQ plot
+library("ggthemes")
+
+load("paper/cigarettes_contig.Rda")
 
 # Compute total effects ---
 d_te1 <- rbind(
@@ -24,6 +27,7 @@ d_te1 <- rbind(
 ) %>% tidyr::pivot_longer(cols = 2:3) %>%
   mutate(model = factor(model, # Set ordering
     levels = c("LM", "SEM", "SDEM", "SLX", "SDM", "SAR")))
+
 d_te2 <- rbind(
   tibble(model = "LM",
     price = coef(out_lm)[2], income = coef(out_lm)[3]),

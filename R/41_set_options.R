@@ -21,7 +21,7 @@ set_options <- function(
   type = c("Independent", "Conjugate", "Shrinkage", "Horseshoe"),
   NG = set_NG(), SNG = set_SNG(), HS = set_HS(),
   SAR = set_SAR(), SLX = set_SLX(), SEM = set_SEM(),
-  SV = set_SV(), ...
+  SV = NULL, ...
   ) {
 
   type <- match.arg(type)

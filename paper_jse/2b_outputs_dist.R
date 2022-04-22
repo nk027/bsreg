@@ -4,6 +4,9 @@ library("dplyr")
 library("spatialreg")
 library("ggplot2")
 library("ggdist") # Dotplots
+library("ggthemes")
+
+load("paper/cigarettes_dist.Rda")
 
 # Prepare object ---
 d_te <- rbind(

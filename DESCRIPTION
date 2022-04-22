@@ -1,8 +1,8 @@
 Package: bsreg
 Type: Package
 Title: Bayesian Spatial Regression Models
-Version: 0.0.1
-Date: 2021-11-24
+Version: 0.0.2
+Date: 2022-02-25
 Authors@R:
     person(given = "Nikolas", family = "Kuschnig", role = c("aut", "cre"), email = "nikolas.kuschnig@wu.ac.at", comment = c(ORCID = "0000-0002-6642-2543"))
 Author: Nikolas Kuschnig [aut, cre] (<https://orcid.org/0000-0002-6642-2543>)
@@ -10,8 +10,8 @@ Maintainer: Nikolas Kuschnig <nikolas.kuschnig@wu.ac.at>
 Description: Fit Bayesian models with a focus on the spatial econometric models.
 Depends: R (>= 3.5.0)
 Imports: R6, Matrix, stats, graphics, utils, grDevices
-Suggests: stochvol
-License: GPL-3
+Suggests: stochvol, coda
+License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

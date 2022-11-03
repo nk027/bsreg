@@ -1,0 +1,284 @@
+---
+title: "Shrinkage in Space"
+author: "Nikolas Kuschnig"
+format:
+  html:
+    theme: default
+    toc: true
+    number-sections: true
+    fig-width: 10
+    fig-height: 6
+---
+
+# Model
+
+We have the model
+
+\begin{align}
+    &\mathbf{z} = \alpha + \mathbf{X} \boldsymbol{\beta} + \mathbf{W} \mathbf{X} \boldsymbol{\theta} + e, \label{eq:nested} \\
+    \mathbf{y} = \mathbf{S}(\lambda | \mathbf{W})^{-1} &\mathbf{z}, \label{eq:link}
+\end{align}
+
+where we care about $\lambda \in (0, 1)$, with the priors
+
+\begin{align}
+  p(\lambda | \tau) &\sim \mathrm{Be}(\tau + 1, \tau + 1), \\
+  p(\tau) &\sim \mathrm{Ga}(\alpha, \beta).
+\end{align}
+
+The Beta and Gamma are densities given by
+
+\begin{align*}
+    \mathrm{Be}(x | \tau + 1, \tau + 1) &\propto x^\tau (1 - x)^\tau \mathrm{Beta}(\tau + 1, \tau + 1)^{-1}, \\
+    \mathrm{Ga}(x | \alpha, \beta) &\propto x^{\alpha - 1} e^{-\beta x}.
+\end{align*}
+
+The joint prior is thus given by
+
+\begin{align*}
+    p(\lambda, \tau | \alpha, \beta) &= p(\lambda | \tau) p(\tau) \\
+    &= \lambda^\tau (1 - \lambda)^\tau \tau^{\alpha - 1} e^{-\beta \tau} \mathrm{Beta}(\tau + 1, \tau + 1)^{-1}.
+\end{align*}
+
+The joint posterior is given by
+
+\begin{align*}
+    p(\lambda, \tau | \mathcal{D}) &\propto p(\mathcal{D} | \lambda, \tau) p(\lambda | \tau) p(\tau) \\
+    &= s(\lambda) \lambda^\tau (1 - \lambda)^\tau \tau^{\alpha - 1} e^{-\beta \tau},
+\end{align*}
+
+where $s$ is a function of $\lambda$.
+
+## Estimation
+
+With the hierarchical extension, we need to adapt our MCMC procedure slightly. First, our MH (or Gibbs) step for $\lambda$ is now conditional on $\tau$. That is
+
+\begin{align*}
+    p(\lambda | \mathcal{D}, \tau) \propto p(\mathcal{D} | \lambda, \tau) p(\lambda | \tau).
+\end{align*}
+
+Second, we need to draw from $\tau$. If we condition on $\lambda$, we can use the following result
+
+\begin{align*}
+    p(\tau | \mathcal{D}, \lambda) &\propto p(\mathcal{D} | \tau, \lambda) p(\tau) \\
+    &\propto \lambda^\tau (1 - \lambda)^\tau \tau^{\alpha - 1} e^{-\beta \tau}.
+\end{align*}
+
+### Potential dead ends
+
+Interestingly, if we try and marginalise out $\tau$ in the following way
+
+\begin{align*}
+    p(\lambda) &= \int_0^{\infty} p(\lambda, \tau) \,d\tau \\
+    &= \int_0^{\infty} \lambda^\tau (1 - \lambda)^\tau \tau^{\alpha - 1} e^{-\beta \tau} \,d\tau \\
+    &\propto \frac{\Gamma(\alpha) e^{-\beta \tau}}{\log(\lambda - \lambda^2)^\alpha} \\
+    &\propto \log(\lambda - \lambda^2)^{-\alpha},
+\end{align*}
+
+the results seem to mirror priors with $p(\lambda | \alpha > 1, \beta = 1)$.
+
+```{r, echo = FALSE}
+f <- \(x, alpha = .1, beta = 1.1, tau = rgamma(1L, .1, .01))
+  gamma(alpha) * exp(-beta * tau) * (-log(x - x^2))^(-alpha)
+
+draw_bg <- \(n_tau = 5000, n_lambda = 500, alpha = .1, beta = 1) {
+  tau <- rgamma(n_tau, alpha, beta)
+  lambda <- matrix(NA_real_, n_tau, n_lambda)
+  for(i in seq(n_tau))
+    lambda[i, ] <- rbeta(n_lambda, 1 + tau[i], 1 + tau[i])
+  lambda
+  # list("lambda" = lambda, "tau" = tau)
+}
+x <- seq(1e-16, 1 - 1e-16, length.out = 250)
+
+op <- par(mfrow = c(1, 2))
+plot(x, f(x, alpha = .1), type = "l")
+draw_bg(alpha = .1) |> density(from = 1e-16, to = 1 - 1e-16) |> plot()
+```
+
+# Visualisation
+
+```{r, echo = FALSE}
+library("ggplot2")
+
+lambdas <- seq(1e-16, 1 - 1e-16, length.out = 250)
+taus <- seq(1e-16, 10, length.out = 250)
+
+dbgamma <- \(lambda, tau, alpha, beta) {
+  exp(tau * (log(lambda - lambda^2) - beta) + (alpha - 1) * log(tau))
+  lambda ^ tau * (1 - lambda)^tau * tau^(alpha - 1) * exp(-beta * tau)
+}
+dbgamma2 <- \(lambda, alpha) {
+  gamma(alpha) / (-log(lambda - lambda^2))^alpha
+}
+dbgamma3 <- \(tau, alpha, beta) {
+  tau^(alpha - 1) * exp(-beta * tau)
+}
+dbgamma4 <- \(tau, alpha, beta, lambda) { # p(\tau | D, \lambda)
+  lambda^tau * (1 - lambda)^tau * beta(1 + tau, 1 + tau) *
+    tau^(alpha - 1) * exp(-beta * tau)
+}
+```
+
+
+## Joint posteriors
+
+```{r, echo = FALSE}
+x <- expand.grid("tau" = taus, "lambda" = lambdas)
+
+plot_joint <- \(alpha = 1, beta = 1) {
+  x$value <- apply(x, 1, \(x) dbgamma(x["lambda"], x["tau"],
+    alpha = alpha, beta = beta))
+  ggplot(x, aes(x = lambda, y = tau, fill = value)) +
+    geom_tile() + scale_fill_viridis_c() +
+    geom_point(aes(x = .5, y = alpha / beta), colour = "orange", pch = 2) +
+    geom_point(aes(x = .5, y = min((alpha - 1) / beta, 0)), colour = "orange", pch = 3) +
+    coord_cartesian(ylim = c(0, max(taus))) +
+    ggtitle(paste0("A = ", alpha, ", B = ", beta)) +
+    theme_bw() +
+    theme(legend.position = "none")
+}
+plot_marginal <- \(alpha = 1, log = FALSE) {
+  x <- data.frame("lambda" = lambdas,
+    "value" = dbgamma2(lambdas, alpha) / dbgamma2(.5, alpha))
+  ggplot(x, aes(x = lambda, y = value)) +
+    geom_line() + scale_fill_viridis_c() +
+    coord_cartesian(ylim = c(0, 1)) +
+    ggtitle(paste0("A = ", alpha)) +
+    theme_bw() +
+    theme(legend.position = "none")
+}
+
+draw_bg <- \(n_tau = 2000, n_lambda = 500, alpha = 1, beta = 1) {
+  tau <- rgamma(n_tau, alpha, beta)
+  lambda <- matrix(NA_real_, n_tau, n_lambda)
+  for(i in seq(n_tau)) lambda[i, ] <- rbeta(n_lambda, 1 + tau[i], 1 + tau[i])
+  list("tau" = tau, "lambda" = lambda,
+    "alpha" = alpha, "beta" = beta)
+}
+plot_bg <- \(x, type = c("all", "lambda")) {
+  type <- match.arg(type)
+  if(type == "all") {
+    op <- par(mfrow = c(2, 2))
+    plot(x$tau |> density(),
+      main = paste0("tau ~ G(", x$alpha, ",", x$beta, ")"))
+    plot(x$lambda |> density(),
+      main = paste0("lambda | tau ~ B(1 + tau, 1 + tau)"))
+    plot(rowMeans(x$lambda), x$tau, main = "",
+      ylab = "tau", xlab = "mean(lambda)")
+    plot(apply(x$lambda, 1, sd), x$tau, main = "", ylab = "tau",
+      xlab = "sd(lambda)")
+    par(op)
+  } else {
+    mu <- x$alpha / x$beta
+    plot(x$lambda |> density(from = 1e-16, to = 1 - 1e-16),
+      main = paste0("lambda | tau ~ G(", x$alpha, ",", x$beta, ")"))
+    lines(lambdas, dbeta(lambdas, 1 + mu, 1 + mu), col = 3, lty = 2)
+    text(.5, dbeta(.1, 1 + mu, 1 + mu),
+      labels = paste0("Info = ", round(mu, 3)))
+  }
+}
+heat_bg <- \(x, type = TRUE) {
+  d <- suppressMessages(cbind(tau = x$tau, x$lambda) |>
+    dplyr::as_tibble(.name_repair = "universal") |>
+    tidyr::pivot_longer(cols = !tau, values_to = "lambda"))
+  if(type) {
+    ggplot(d, aes(x = lambda, y = tau)) +
+      stat_density_2d(aes(fill = ..level..), geom = "polygon", colour = "gray") +
+      scale_fill_viridis_c() +
+      theme_bw() +
+      theme(legend.position = "none")
+  } else {
+  ggplot(d, aes(x = lambda, y = tau)) +
+    # geom_bin2d(bins = 120) +
+    geom_hex(bins = 120) +
+    scale_fill_viridis_c() +
+    theme_bw() +
+    theme(legend.position = "none")
+  }
+}
+```
+
+```{r, echo = FALSE}
+cowplot::plot_grid(
+  plot_joint(.1, .01),
+  plot_joint(.1, .1),
+  plot_joint(.1, 1),
+  plot_joint(.1, 10), nrow = 2
+)
+plot_marginal(.1)
+draw_bg(alpha = .1, beta = 1) |> plot_bg()
+draw_bg(alpha = .1, beta = 1) |> heat_bg()
+
+cowplot::plot_grid(
+  plot_joint(1, .01),
+  plot_joint(1, .1),
+  plot_joint(1, 1),
+  plot_joint(1, 10), nrow = 2
+)
+plot_marginal(1)
+draw_bg(alpha = 1, beta = 1) |> plot_bg()
+draw_bg(alpha = 1, beta = 1) |> heat_bg()
+
+cowplot::plot_grid(
+  plot_joint(2, .01),
+  plot_joint(2, .1),
+  plot_joint(2, 1),
+  plot_joint(2, 10), nrow = 2
+)
+plot_marginal(2)
+draw_bg(alpha = 2, beta = 1) |> plot_bg()
+draw_bg(alpha = 2, beta = 1) |> heat_bg()
+
+cowplot::plot_grid(
+  plot_joint(5, .01),
+  plot_joint(5, .1),
+  plot_joint(5, 1),
+  plot_joint(5, 10), nrow = 2
+)
+plot_marginal(5)
+draw_bg(alpha = 5, beta = 1) |> plot_bg()
+draw_bg(alpha = 5, beta = 1) |> heat_bg()
+
+cowplot::plot_grid(
+  plot_joint(10, .01),
+  plot_joint(10, .1),
+  plot_joint(10, 1),
+  plot_joint(10, 10), nrow = 2
+)
+plot_marginal(10)
+draw_bg(alpha = 10, beta = 1) |> plot_bg()
+draw_bg(alpha = 10, beta = 1) |> heat_bg()
+```
+
+## Marginals
+
+```{r, echo = FALSE}
+op <- par(mfrow = c(2, 2))
+draw_bg(alpha = .01, beta = .01) |> plot_bg(type = "lambda")
+draw_bg(alpha = .01, beta = .1) |> plot_bg(type = "lambda")
+draw_bg(alpha = .01, beta = 1) |> plot_bg(type = "lambda")
+draw_bg(alpha = .01, beta = 10) |> plot_bg(type = "lambda")
+
+draw_bg(alpha = .1, beta = .01) |> plot_bg(type = "lambda")
+draw_bg(alpha = .1, beta = .1) |> plot_bg(type = "lambda")
+draw_bg(alpha = .1, beta = 1) |> plot_bg(type = "lambda")
+draw_bg(alpha = .1, beta = 10) |> plot_bg(type = "lambda")
+
+draw_bg(alpha = .5, beta = .01) |> plot_bg(type = "lambda")
+draw_bg(alpha = .5, beta = .1) |> plot_bg(type = "lambda")
+draw_bg(alpha = .5, beta = 1) |> plot_bg(type = "lambda")
+draw_bg(alpha = .5, beta = 10) |> plot_bg(type = "lambda")
+
+draw_bg(alpha = 1, beta = .01) |> plot_bg(type = "lambda")
+draw_bg(alpha = 1, beta = .1) |> plot_bg(type = "lambda")
+draw_bg(alpha = 1, beta = 1) |> plot_bg(type = "lambda")
+draw_bg(alpha = 1, beta = 10) |> plot_bg(type = "lambda")
+
+draw_bg(alpha = 10, beta = .01) |> plot_bg(type = "lambda")
+draw_bg(alpha = 10, beta = .1) |> plot_bg(type = "lambda")
+draw_bg(alpha = 10, beta = 1) |> plot_bg(type = "lambda")
+draw_bg(alpha = 10, beta = 10) |> plot_bg(type = "lambda")
+par(op)
+```
+

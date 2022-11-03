@@ -7,7 +7,7 @@ library("ggdist") # Dotplots
 library("qqplotr") # QQ plot
 library("ggthemes")
 
-load("paper/cigarettes_contig.Rda")
+load("paper_jse/cigarettes_contig.Rda")
 
 # Compute total effects ---
 d_te1 <- rbind(

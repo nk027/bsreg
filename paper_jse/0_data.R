@@ -7,15 +7,15 @@ library("readxl")
 download.file(
   "https://spatial-panels.com/wp-content/uploads/2017/06/Files-SLX-paper.zip",
   destfile = "paper/data/halleckvega2015.zip")
-unzip("paper/data/halleckvega2015.zip", exdir = "paper/data",
+unzip("paper_jse/data/halleckvega2015.zip", exdir = "paper_jse/data",
   files = c("cigarette+2var.xls", "Spat-Sym-US.xls", "cigar_states.xls"))
 
 # Prepare the data
-df <- read_excel("paper/data/cigarette+2var.xls") %>%
+df <- read_excel("paper_jse/data/cigarette+2var.xls") %>%
   mutate(year = factor(year + 1963), state = factor(state))
-contig <- read_excel("paper/data/Spat-Sym-US.xls",
+contig <- read_excel("paper_jse/data/Spat-Sym-US.xls",
   col_names = paste0(1:46)) %>% as.matrix()
-xy <- read_excel("paper/data/cigar_states.xls", col_names = TRUE)
+xy <- read_excel("paper_jse/data/cigar_states.xls", col_names = TRUE)
 
 # Utah has a wrong longitude
 xy %>% filter(Name == "UTAH") # 11.9 is off the Irish coast

@@ -76,6 +76,16 @@ Base <- R6Class("Base",
 
     },
 
+    # We would need to re-evaluate quite a few cached quantities afterwards
+    # adjust_priors = function(slot, priors) {
+
+    #   if(!grepl("^prior", class(priors))) {stop("Please provide a valid list of priors.")}
+    #   eligible <- vapply(private, \(x) any(grepl("priors", names(x))), logical(1L))
+    #   if(slot %in% names(eligible)[eligible]) {
+    #     private[[slot]]$priors <- priors
+    #   } else {stop("Appropriate slot for the prior not found.")}
+    # },
+
     # Slot for Metropolis-Hastings steps
     MH = list()
   ),
@@ -95,7 +105,6 @@ Base <- R6Class("Base",
   )
 
 )
-
 
 
 #' Bayesian model with independent Normal-Gamma prior

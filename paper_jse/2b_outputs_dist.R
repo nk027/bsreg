@@ -6,7 +6,8 @@ library("ggplot2")
 library("ggdist") # Dotplots
 library("ggthemes")
 
-load("paper/cigarettes_dist.Rda")
+load("paper_jse/cigarettes_dist.Rda")
+load("paper_jse/cigarettes_contig.Rda")
 
 # Prepare object ---
 d_te <- rbind(

@@ -142,27 +142,66 @@ has_package <- function(package) {
 #' @param log Logical scalar. Whether to log probabilities.
 #'
 #' @noRd
-dbbinom <- function(x, size, alpha, beta, log = TRUE) {
-  if(log) {
-    lchoose(size, x) + lbeta(x + alpha, size - x + beta) - lbeta(alpha, beta)
-  } else {
-    choose(size, x) * beta(x + alpha, size - x + beta) / beta(alpha, beta)
-  }
+dbbinom <- function(x, size, alpha, beta, log = FALSE) {
+  out <- lchoose(size, x) + lbeta(x + alpha, size - x + beta) - lbeta(alpha, beta)
+  if(isFALSE(log)) {out <- exp(out)}
+  return(out)
 }
 
 
 #' Density of a Beta Negative Binomial distribution
 #'
 #' @param x Numeric scalar with the value.
-#' @param r Integer scalar. Number of trials.
+#' @param size Integer scalar. Number of trials.
 #' @param alpha,beta Numeric scalar. Shape parameters.
 #' @param log Logical scalar. Whether to log probabilities.
 #'
 #' @noRd
-dbnbinom <- function(x, size, alpha, beta, log = TRUE) {
-  if(log) {
-    lgamma(size + x) - lgamma(x + 1) - lgamma(size) + lbeta(alpha + size, beta + x) - lbeta(alpha, beta)
-  } else {
-    gamma(size + x) / (factorial(x) * gamma(size)) * beta(alpha + size, beta + x) / beta(alpha, beta)
+dbnbinom <- function(x, size, alpha, beta, log = FALSE) {
+  out <- lgamma(size + x) - lgamma(x + 1) - lgamma(size) + lbeta(alpha + size, beta + x) - lbeta(alpha, beta)
+  if(isFALSE(log)) {out <- exp(out)}
+  return(out)
+}
+
+
+#' p(tau | lambda) \propto (lambda - lambda^2)^tau tau^(alpha - 1) exp(-beta tau)
+#'
+#' @param x Numeric scalar with the value.
+#' @param lambda Numeric scalar in (0, 1). Beta value to condition on.
+#' @param alpha,beta Numeric scalar. Shape parameters.
+#' @param log Logical scalar. Whether to log probabilities.
+#'
+#' @noRd
+dtau <- function(x, lambda, alpha, beta, log = FALSE) {
+  out <- x * log(lambda - lambda^2) + (alpha - 1) * log(x) - beta * x +
+    alpha * log(beta) - lgamma(alpha) # Convenient for sampling
+  if(isFALSE(log)) {out <- exp(out)}
+  return(out)
+}
+
+
+#' Draw from p(tau | lambda)
+#'
+#' @param n Integer scalar with the number of draws.
+#' @param lambda Numeric scalar in (0, 1). Beta value to condition on.
+#' @param alpha,beta Numeric scalar. Shape parameters.
+#'
+#' @noRd
+rtau <- \(n, lambda, alpha, beta, verbose = TRUE) {
+  out <- numeric(n)
+  i <- j <- 1
+  # The Gamma density we draw from should be encompassing already
+  m <- 1
+  # exp(dtau(1e-32, lambda, alpha, beta, log = TRUE) - dgamma(1e-32, alpha, beta, log = TRUE))
+  while (i <= n) {
+    x <- rgamma(1L, alpha, beta)
+    p_acc <- exp(dtau(x, lambda, alpha, beta, log = TRUE) - dgamma(x, alpha, beta, log = TRUE) - log(m))
+    if(runif(1L) < p_acc) {
+      out[i] <- x
+      i <- i + 1
+    }
+    j <- j + 1
   }
+  if(isTRUE(verbose)) cat("Tries: ", j, " (", round(j / n, 2), " draws per sample)", sep = "")
+  return(out)
 }

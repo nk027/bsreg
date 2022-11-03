@@ -55,7 +55,7 @@ MetropolisHastings <- R6Class("MetropolisHastings",
 
     acceptance = function(proposal = private$proposal, current = private$value, ...) {
       private$probability <- exp(self$posterior(proposal, ...) -
-        self$posterior(current, ...) + self$adjustment(proposal, ...))
+        self$posterior(current, ...) + self$adjustment(proposal, current, ...))
     },
 
     adjustment = function(proposal = private$proposal, current = private$value, ...) {
@@ -203,10 +203,10 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
       # private$proposal <- self$untransform(private$proposal2)
     },
 
-    acceptance = function(proposal = private$proposal, current = private$value, ...) {
-      private$probability <- exp(self$posterior(proposal, ...) -
-        self$posterior(current, ...) + self$adjustment(proposal, current))
-    },
+    # acceptance = function(proposaal = private$proposal, current = private$value, ...) {
+    #   private$probability <- exp(self$posterior(proposal, ...) -
+    #     self$posterior(current, ...) + self$adjustment(proposal, current))
+    # },
 
     finalize = function(...) {
       super$finalize(...)
@@ -215,16 +215,20 @@ MH_SAR_lambda <- R6Class("MH_SAR_lambda", inherit = MetropolisHastings,
     },
 
     sample_tau = function(...) {
-      tau_proposal <- rgamma(1L, shape = private$shape_a, rate = private$shape_b)
-      tau_probability <- exp(self$prior(tau = private$tau) - self$prior(tau = tau_proposal) +
-        dgamma(private$tau, shape = private$shape_a, rate = private$shape_b, log = TRUE) -
-        dgamma(tau_proposal, shape = private$shape_a, rate = private$shape_b, log = TRUE))
-      if(isTRUE(runif(1L) < tau_probability)) {
-        private$tau <- tau_proposal
-      }
+      # Gibbs step ---
+      private$tau <- rtau(1L, lambda = (private$value - private$lower) / (private$upper - private$lower),
+        alpha = private$shape_a, beta = private$shape_b, verbose = FALSE)
+      # Metropolis-Hastings step ---
+      # tau_proposal <- rgamma(1L, shape = private$shape_a, rate = private$shape_b)
+      # tau_probability <- exp(self$prior(tau = private$tau) - self$prior(tau = tau_proposal) +
+      #   dgamma(private$tau, shape = private$shape_a, rate = private$shape_b, log = TRUE) -
+      #   dgamma(tau_proposal, shape = private$shape_a, rate = private$shape_b, log = TRUE))
+      # if(isTRUE(runif(1L) < tau_probability)) {
+      #   private$tau <- tau_proposal
+      # }
     },
 
-    adjustment = function(proposal = private$proposal, current = private$value) {
+    adjustment = function(proposal = private$proposal, current = private$value, ...) {
       0
       # (1 - proposal^2) - (1 - current^2) # Proposed z transformed variable
     },
@@ -276,7 +280,7 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
   public = list(
 
     initialize_delta = function(
-      prior = c("igamma", "lnormal", "weibull", "uniform", "bbinom", "bnbinom"),
+      prior = c("igamma", "lnormal", "weibull", "bbinom", "bnbinom", "uniform"),
       shape_a = 2, shape_b = 1, size = NA_real_,
       lower = 1e-12, upper = Inf, ...) {
 
@@ -291,7 +295,7 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
         function(value, ...) {
           dgamma(1 / value, shape = private$shape_a, rate = private$shape_b, log = TRUE)
         }
-      } else if(prior == "lognormal") {
+      } else if(prior == "lnormal") {
         function(value, ...) {
           dlnorm(value, meanlog = private$shape_a, sdlog = private$shape_b, log = TRUE)
         }
@@ -299,13 +303,13 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
         function(value, ...) {
           dweibull(value, shape = private$shape_a, scale = private$shape_b, log = TRUE)
         }
-      } else if(prior == "betabinom") {
+      } else if(prior == "bbinom") {
         function(value, ...) {
           dbbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
         }
-      } else if(prior == "betabinom") {
+      } else if(prior == "bnbinom") {
         function(value, ...) {
-          dbbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
+          dbnbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
         }
       } else if(prior == "uniform") {
         function(value, ...) {
@@ -336,13 +340,12 @@ MH_SLX_delta <- R6Class("MH_SLX_delta", inherit = MetropolisHastings,
       }
     },
 
-    acceptance = function(proposal = private$proposal,
-      current = private$value, ...) {
-      private$probability <- exp(self$posterior(proposal, ...) -
-        self$posterior(current, ...) + self$adjustment(proposal, current))
-    },
+    # acceptance = function(proposal = private$proposal, current = private$value, ...) {
+    #   private$probability <- exp(self$posterior(proposal, ...) -
+    #     self$posterior(current, ...) + self$adjustment(proposal, current))
+    # },
 
-    adjustment = function(proposal = private$proposal, current = private$value) {
+    adjustment = function(proposal = private$proposal, current = private$value, ...) {
       0
     },
 
@@ -380,5 +383,115 @@ MH_SAR_delta <- R6Class("MH_SAR_delta", inherit = MH_SLX_delta,
       dots <- list(...)
       dots$get_ldet(value) - (private$N - private$M) / 2 * log(dots$get_rss(value)) + self$prior(value)
     }
+  )
+)
+
+
+#' Metropolis-Hastings step for xi in the spatially lagged explanatories model
+#'
+#' @docType class
+#'
+#' @importFrom R6 R6Class
+#'
+#' @noRd
+MH_SLX_xi <- R6Class("MH_SLX_xi", inherit = MetropolisHastings,
+
+  public = list(
+
+    initialize_xi = function(
+      prior = c("gamma", "igamma", "lnormal", "weibull", "bbinom", "bnbinom", "uniform"),
+      shape_a = 1, shape_b = .01, size = NA_real_,
+      lower = 0, upper = Inf, ...) {
+
+      private$shape_a <- shape_a
+      private$shape_b <- shape_b
+
+      private$lower <- lower
+      private$upper <- upper
+
+      prior <- match.arg(prior)
+      private$prior_fun <- if(prior == "gamma") {
+        function(value, ...) {
+          dgamma(value, shape = private$shape_a, rate = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "igamma") {
+        function(value, ...) {
+          dgamma(1 / value, shape = private$shape_a, rate = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "lnormal") {
+        function(value, ...) {
+          dlnorm(value, meanlog = private$shape_a, sdlog = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "weibull") {
+        function(value, ...) {
+          dweibull(value, shape = private$shape_a, scale = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "bbinom") {
+        function(value, ...) {
+          dbbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "bnbinom") {
+        function(value, ...) {
+          dbnbinom(value, size = private$upper, alpha = private$shape_a, beta = private$shape_b, log = TRUE)
+        }
+      } else if(prior == "uniform") {
+        function(value, ...) {
+          dunif(value, min = private$lower, max = private$upper, log = TRUE)
+        }
+      }
+
+      private$name <- "Connectivity xi"
+    },
+
+    setup_xi = function(N, M) {
+      private$N <- N
+      private$M <- M
+      private$value <- rep(private$value, N)
+    },
+
+    propose = function(location = private$value, scale = private$scale, ...) {
+      while(TRUE) {
+        # private$proposal <- rnorm(1L, location, scale)
+        # if(private$proposal < private$upper && private$proposal > private$lower) {break}
+        private$proposal <- exp(rnorm(1L, log(location[list(...)$i]), scale))
+        if(private$proposal < private$upper && private$proposal > private$lower) {break}
+      }
+    },
+
+    acceptance = function(proposal = private$proposal, current = private$value, ...) {
+      private$probability <- exp(self$posterior(proposal, ...) -
+        self$posterior(current[list(...)$i], ...) + self$adjustment(proposal, current[list(...)$i]))
+    },
+
+    adjustment = function(proposal = private$proposal, current = private$value, ...) {
+      log(proposal) - log(current) # Account for the log-normal proposal
+    },
+
+    posterior = function(value = private$value, ...) {
+      dots <- list(...)
+      -(private$N - private$M) / 2 * log(dots$get_rss(value)) + self$prior(value, ...)
+    },
+
+    prior = function(value = private$value, ...) {
+      private$prior_fun(value, ...)
+    },
+
+    finalize = function(...) {
+      if(isTRUE(runif(1L) < private$probability)) {
+        private$value[list(...)$i] <- private$proposal
+        private$accepted <- private$accepted + 1L / private$N
+        private$accepted_tune <- private$accepted_tune + 1L / private$N
+      }
+      private$proposed <- private$proposed + 1L / private$N
+      private$proposed_tune <- private$proposed_tune + 1L / private$N
+    }
+
+  ),
+
+  private = list(
+    prior_fun = NULL, prior_type = NULL,
+    shape_a = NULL, shape_b = NULL,
+    lower = NULL, upper = NULL,
+    N = NULL, M = NULL
   )
 )

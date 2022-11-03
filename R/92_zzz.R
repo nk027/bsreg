@@ -19,3 +19,4 @@ register_s3 <- function(pkg, generic, class) {
     registerS3method(generic, class, fun, envir = asNamespace(pkg))
   })
 }
+

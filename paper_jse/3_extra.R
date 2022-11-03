@@ -1,4 +1,6 @@
 
+library("ggplot2")
+
 # Lazy BIC for comparing fixed SLX(delta) variants ---
 bics <- c(
   "cont" = BIC(lm(y ~ cbind(X, X_cont))),
@@ -10,8 +12,8 @@ bics_s <- bics - min(bics) # Standardise for numerics
 exp(bics_s / -2) / sum(exp(bics_s / -2)) # Posterior probabilities
 
 # Visualise inverse-distance connectivity
-distances <- seq(1, 5, length.out = 1000)
-deltas <- seq(0.5, 5, length.out = 1000)
+distances <- seq(1, 5, length.out = 200)
+deltas <- seq(1, 5, length.out = 200)
 d_conn <- expand.grid(distance = distances, delta = deltas)
 idd <- function(delta, distance) distance^(-delta)
 d_conn$connectivity <- NA_real_

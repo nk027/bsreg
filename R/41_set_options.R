@@ -109,15 +109,20 @@ set_HS <- function(lambda = 1, tau = 1, zeta = 1, nu = 1) {
 #' @param delta_a,delta_b Numeric scalars with the prior shapes of the connectivity parameter 'delta'.
 #' @param delta_scale Numeric scalar with the proposal scale of 'delta'. Defaults to zero for a fixed value.
 #' @param delta_min,delta_max Numeric scalars with upper and lower bounds for 'delta'.
-#' @param lambda,delta Numerics with starting values for the respective parameter.
+#' @param xi_a,xi_b Numeric scalars with the prior shapes of the connectivity parameter 'delta'.
+#' @param xi_scale Numeric scalar with the proposal scale of 'delta'. Defaults to zero for a fixed value.
+#' @param xi_min,xi_max Numeric scalars with upper and lower bounds for 'delta'.
+#' @param lambda,delta,xi Numerics with starting values for the respective parameter.
 #'
 #' @return Returns a list with priors and settings.
 #' @export
 set_SAR <- function(
-  lambda_prior = c("beta", "uniform", "bgamma"),
-  lambda_a = 1.01, lambda_b = 1.01, lambda = 0, lambda_scale = 0.1, lambda_min = -1, lambda_max = 1 - 1e-12,
-  delta_prior = c("igamma", "lnormal", "weibull", "uniform", "bbinom", "bnbinom"),
-  delta_a = 1.01, delta_b = 1.01, delta = 1, delta_scale = 0, delta_min = 1e-12, delta_max = Inf) {
+  lambda_prior = c("beta", "bgamma", "uniform"),
+  lambda_a = 1.01, lambda_b = 1.01, lambda = 0, lambda_scale = 0.1, lambda_min = -1 + 1e-12, lambda_max = 1 - 1e-12,
+  delta_prior = c("igamma", "lnormal", "weibull", "bbinom", "bnbinom", "uniform"),
+  delta_a = .5, delta_b = 2, delta = 1, delta_scale = 0, delta_min = 1e-12, delta_max = Inf,
+  xi_prior = c("gamma", "igamma", "lnormal", "weibull", "uniform"),
+  xi_a = 1, xi_b = .01, xi = 1, xi_scale = 0, xi_min = 1e-12, xi_max = Inf) {
 
   structure(list(
     lambda_prior = match.arg(lambda_prior),
@@ -145,7 +150,21 @@ set_SAR <- function(
     delta = num_check(delta, min = delta_min, max = delta_max,
       msg = "Please provide a valid starting value for delta (spatial) via 'delta'."),
     delta_scale = num_check(delta_scale, min = 0, max = Inf,
-      msg = "Please provide a valid proposal scale for delta (spatial) via 'delta_scale'.")
+      msg = "Please provide a valid proposal scale for delta (spatial) via 'delta_scale'."),
+    xi_prior = match.arg(xi_prior),
+    xi_a = num_check(xi_a, min = 1e-12, max = Inf,
+      msg = "Please provide a valid shape for xi (spatial) via 'xi_a'."),
+    xi_b = num_check(xi_b, min = 1e-12, max = Inf,
+      msg = "Please provide a valid rate for xi (spatial) via 'xi_b'."),
+    xi_min = num_check(xi_min, min = -Inf, max = Inf,
+      msg = "Please provide a valid lower bound for xi (spatial) via 'xi_min'."),
+    xi_max = num_check(xi_max, min = -Inf, max = Inf,
+      msg = "Please provide a valid upper bound for xi (spatial) via 'xi_max'."),
+    xi = num_check(xi, min = xi_min, max = xi_max,
+      msg = "Please provide a valid starting value for xi (spatial) via 'xi'."),
+    xi_scale = num_check(xi_scale, min = 0, max = Inf,
+      msg = "Please provide a valid proposal scale for xi (spatial) via 'xi_scale'.")
+
   ), class = "prior_SAR")
 }
 #' @export

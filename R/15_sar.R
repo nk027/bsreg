@@ -177,7 +177,7 @@ get_sar_class <- function(parent = NormalGamma) {
       # Prepare RSS and the log-determinant as functions of lambda
       get_rss <- {function() {
         prec_ch <- chol(self$prior_precision + self$XX / self$sigma)
-        b0 <- backsolve(prec_ch, forwardsolve(prec_ch, (self$prior_precision %*% private$NG$mu0 + self$Xy / self$sigma),
+        b0 <- backsolve(prec_ch, forwardsolve(prec_ch, (self$prior_precision %*% private$NG$mu0 + crossprod(self$X, super$y) / self$sigma),
           upper.tri = TRUE, transpose = TRUE))
         b1 <- backsolve(prec_ch, forwardsolve(prec_ch, (self$prior_precision %*% private$NG$mu0 + self$XWy / self$sigma),
           upper.tri = TRUE, transpose = TRUE))
